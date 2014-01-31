@@ -1,4 +1,4 @@
-plink
+Plink
 =====
 
-Plink Haptic feedback Concept project
+Haptic feedback concept project
