@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Deployment xmlns="http://schemas.microsoft.com/windowsphone/2012/deployment" AppPlatformVersion="8.0">
   <DefaultLanguage xmlns="" code="en-US" />
-  <App xmlns="" ProductID="{72bf23d9-9a0a-4481-bfd5-bb262d4bcdb6}" Title="MapApp" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="MapApp author" Description="Sample description" Publisher="MapApp" PublisherID="{09d077cb-2447-4f65-a1b0-5a63a4565b4b}">
+  <App xmlns="" ProductID="{3d35256c-fe07-418e-8fa5-be6fafe7c581}" Title="App" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="App author" Description="Sample description" Publisher="App" PublisherID="{d05503d9-62ea-47c5-a42d-bfb1c11c84f2}">
     <IconPath IsRelative="true" IsResource="false">Assets\ApplicationIcon.png</IconPath>
     <Capabilities>
       <Capability Name="ID_CAP_NETWORKING" />
@@ -16,12 +16,12 @@
       <DefaultTask Name="_default" NavigationPage="MainPage.xaml" />
     </Tasks>
     <Tokens>
-      <PrimaryToken TokenID="MapAppToken" TaskName="_default">
+      <PrimaryToken TokenID="AppToken" TaskName="_default">
         <TemplateFlip>
           <SmallImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileSmall.png</SmallImageURI>
           <Count>0</Count>
           <BackgroundImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileMedium.png</BackgroundImageURI>
-          <Title>MapApp</Title>
+          <Title>App</Title>
           <BackContent>
           </BackContent>
           <BackBackgroundImageURI>

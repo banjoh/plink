@@ -1,6 +1,6 @@
-﻿using MapApp.Resources;
+﻿using App.Resources;
 
-namespace MapApp
+namespace App
 {
     /// <summary>
     /// Provides access to string resources.

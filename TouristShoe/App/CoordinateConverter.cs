@@ -2,9 +2,8 @@
 using System.Device.Location; // Provides the GeoCoordinate class.
 using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
 
-
-namespace MapApp
-{
+namespace App
+{    
     public static class CoordinateConverter
     {
         public static GeoCoordinate ConvertGeocoordinate(Geocoordinate geocoordinate)
