@@ -3,6 +3,9 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
 using App.Resources;
+using System.Diagnostics;
+using System.Windows;
+using System.Text;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
@@ -38,9 +41,37 @@ namespace App.ViewModels
             {
                 if (value != _myLoc)
                 {
-                    _myLoc = value;
-                    NotifyPropertyChanged("MyLocationProperty");
+                    _myLoc = value == null ? new GeoCoordinate(0,0) : value;
+                    NotifyPropertyChanged("MyLocation");
                 }
+            }
+        }
+
+        private Queue<string> logs = new Queue<string>();
+        /// <summary>
+        /// Sample ViewModel property; this property is used in the view to display its value using a Binding
+        /// </summary>
+        /// <returns></returns>
+        public string Log
+        {
+            get
+            {
+                StringBuilder b = new StringBuilder();
+                foreach (string s in logs)
+                {
+                    b.AppendLine(s);
+                }
+
+                return b.ToString();
+            }
+            set
+            {
+                logs.Enqueue(value);
+                if (logs.Count >= 4)
+                {
+                    logs.Dequeue();
+                }
+                NotifyPropertyChanged("Log");
             }
         }
 
@@ -70,14 +101,17 @@ namespace App.ViewModels
             {
                 // Get the current position
                 Geoposition myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
-                MyLocation = CoordinateConverter.ConvertGeocoordinate(myGeoposition.Coordinate);
+                MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
-                // Listen to changing positions
+                // Listen to changing positions and status values
+                App.GeoLoc.ReportInterval = 5000;
+                App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
+                App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
             }
             catch
             {
                 // Couldn't get current location - location might be disabled in settings
-                System.Windows.MessageBox.Show("Current location cannot be obtained. Check that location service is turned on in phone settings.");
+                MessageBox.Show("Current location cannot be obtained. Check that location service is turned on in phone settings then restart the application.");
             }
 
             // Simulate loading stored locations
@@ -116,7 +150,28 @@ namespace App.ViewModels
             this.Items.Add(new ItemViewModel() { LineOne = "runtime fifteen", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat" });
             this.Items.Add(new ItemViewModel() { LineOne = "runtime sixteen", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });*/
 
+            Debug.WriteLine("Data loaded");
             this.IsDataLoaded = true;
+        }
+
+        void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
+        {
+            if (App.GeoLoc == sender)
+            {
+                Debug.WriteLine("GeoLoc status: {0}", args.Status.ToString());
+            }
+        }
+
+        void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
+        {
+            if (App.GeoLoc == sender) {
+                App.Dispatch(() =>
+                {
+                    MyLocation = args.Position.Coordinate.ToGeoCoordinate();
+                    Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+                });
+                Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
+            }
         }
 
         void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)

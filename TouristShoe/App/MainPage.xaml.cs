@@ -26,6 +26,7 @@ namespace App
     {
         private readonly MapLayer myCurrentLocationLayer = new MapLayer();
         private readonly MapLayer placesLayer = new MapLayer();
+        private MapRoute mapRoute = null;
         
         // Constructor
         public MainPage()
@@ -50,7 +51,17 @@ namespace App
             {
                 ItemViewModel it = (ItemViewModel)item;
                 AddPlaceToMap(it.Location.GeoCoordinate);
-            }            
+            }
+
+            // Update the route on map
+            List<GeoCoordinate> coords = new List<GeoCoordinate>();
+            coords.Add(App.ViewModel.MyLocation);
+            foreach (ItemViewModel it in App.ViewModel.Items)
+            {
+                coords.Add(it.Location.GeoCoordinate);
+            }
+
+            UpdateRoute(coords);
         }
 
         private void UpdateMyCurrectLocation()
@@ -78,7 +89,7 @@ namespace App
 
         void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "MyLocationProperty")
+            if (e.PropertyName == "MyLocation")
             {
                 UpdateMyCurrectLocation();
             }
@@ -106,6 +117,36 @@ namespace App
             MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
+        private void UpdateRoute(List<GeoCoordinate> route)
+        {
+            // Cancel previous query
+            RouteQuery routeQuery = new RouteQuery();
+
+            // Get the route for the new set
+            routeQuery.TravelMode = TravelMode.Walking;
+            routeQuery.RouteOptimization = RouteOptimization.MinimizeDistance;
+            routeQuery.Waypoints = route;
+            routeQuery.QueryCompleted += routeQuery_QueryCompleted;
+            routeQuery.QueryAsync();
+        }
+
+        void routeQuery_QueryCompleted(object sender, QueryCompletedEventArgs<Route> e)
+        {
+            if (e.Error == null)
+            {
+                // Remove old route
+                if (mapRoute != null)
+                {
+                    MapControl.RemoveRoute(mapRoute);
+                }
+
+                // Update UI route
+                Route route = e.Result;
+                mapRoute = new MapRoute(route);
+                MapControl.AddRoute(mapRoute);
+            }
+        }
+
         // Load data for the ViewModel Items
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -113,6 +154,11 @@ namespace App
             {
                 App.ViewModel.LoadData();
             }
+        }
+
+        private void ApplicationBarMenuItem_Click(object sender, EventArgs e)
+        {
+            DebugBox.Visibility = DebugBox.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }

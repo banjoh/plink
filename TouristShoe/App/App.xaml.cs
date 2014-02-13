@@ -8,6 +8,7 @@ using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
 using App.Resources;
 using App.ViewModels;
+using System.Windows.Threading;
 
 //Maps & Location namespaces
 using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
@@ -17,7 +18,8 @@ namespace App
     public partial class App : Application
     {
         private static MainViewModel viewModel = null;
-        public static Geolocator geoLoc = null;
+        private static Geolocator geoLoc = null;
+        private static Dispatcher disp = null;
 
         /// <summary>
         /// A static ViewModel used by the views to bind against.
@@ -33,6 +35,11 @@ namespace App
 
                 return viewModel;
             }
+        }
+
+        public static void Dispatch(Action a)
+        {
+            disp.BeginInvoke(a);
         }
 
         public static Geolocator GeoLoc
@@ -91,6 +98,8 @@ namespace App
                 // and consume battery power when the user is not using the phone.
                 PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Disabled;
             }
+
+            App.disp = App.Current.RootVisual.Dispatcher;
         }
 
         // Code to execute when the application is launching (eg, from Start)
