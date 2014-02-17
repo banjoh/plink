@@ -75,7 +75,7 @@
               Margin="20,0,20,10"
               VerticalAlignment="Bottom"
               Background="#80000000"
-              Visibility="Collapsed">
+              Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="auto"/>

@@ -47,6 +47,23 @@ namespace App.ViewModels
             }
         }
 
+        private Route myRoute = default(Route);
+        public Route MyRoute
+        {
+            get
+            {
+                return myRoute;
+            }
+            set
+            {
+                if (value != myRoute)
+                {
+                    myRoute = value == null ? default(Route) : value;
+                    NotifyPropertyChanged("MyRoute");
+                }
+            }
+        }
+
         private Queue<string> logs = new Queue<string>();
         /// <summary>
         /// Sample ViewModel property; this property is used in the view to display its value using a Binding
@@ -97,6 +114,7 @@ namespace App.ViewModels
         /// </summary>
         public async void LoadData()
         {
+            App.IndicatingProgress = true;
             try
             {
                 // Get the current position
@@ -104,7 +122,7 @@ namespace App.ViewModels
                 MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
-                App.GeoLoc.ReportInterval = 5000;
+                App.GeoLoc.ReportInterval = 2500;
                 App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
                 App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
             }
@@ -132,26 +150,11 @@ namespace App.ViewModels
                 query.QueryAsync();
             }
 
-            // Sample data; replace with real data
-            /*this.Items.Add(new ItemViewModel() { LineOne = "runtime one", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime three", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime four", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime five", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime six", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime seven", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime eight", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime nine", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime ten", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime eleven", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime twelve", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime thirteen", LineTwo = "Maecenas praesent accumsan bibendum", LineThree = "Maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime fourteen", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime fifteen", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos interdum lobortis nascetur pharetra placerat" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime sixteen", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Pulvinar sagittis senectus sociosqu suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum" });*/
+            App.NavShoe.Route = MyRoute;
 
             Debug.WriteLine("Data loaded");
             this.IsDataLoaded = true;
+            App.IndicatingProgress = false;
         }
 
         void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
@@ -165,11 +168,20 @@ namespace App.ViewModels
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
             if (App.GeoLoc == sender) {
-                App.Dispatch(() =>
+
+                if (!App.RunningInBackground)
                 {
-                    MyLocation = args.Position.Coordinate.ToGeoCoordinate();
-                    Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
-                });
+                    // We are in the UI
+                    App.Dispatch(() =>
+                    {
+                        MyLocation = args.Position.Coordinate.ToGeoCoordinate();
+                        Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+                    });
+                }
+                else
+                {
+                    App.NavShoe.PositionChanged(args.Position.Coordinate.ToGeoCoordinate());
+                }                
                 Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
             }
         }

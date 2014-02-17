@@ -19,7 +19,8 @@ namespace App
     {
         private static MainViewModel viewModel = null;
         private static Geolocator geoLoc = null;
-        private static Dispatcher disp = null;
+        private static Dispatcher dispatcher = null;
+        private static NavigateShoes navShoe = null;
 
         /// <summary>
         /// A static ViewModel used by the views to bind against.
@@ -37,9 +38,49 @@ namespace App
             }
         }
 
+        public static NavigateShoes NavShoe
+        {
+            get
+            {
+                if (navShoe == null)
+                {
+                    navShoe = new NavigateShoes();
+                }
+                return navShoe;
+            }
+        }
+
+        public static bool IndicatingProgress
+        {
+            get
+            {
+                if (SystemTray.ProgressIndicator == null)
+                {
+                    SystemTray.ProgressIndicator = new ProgressIndicator();
+                    SystemTray.ProgressIndicator.Text = "Loading...";
+                    SystemTray.ProgressIndicator.IsIndeterminate = true;
+                }
+                return SystemTray.ProgressIndicator.IsVisible;
+            }
+
+            set
+            {
+                if (SystemTray.ProgressIndicator == null)
+                {
+                    SystemTray.ProgressIndicator = new ProgressIndicator();
+                    SystemTray.ProgressIndicator.Text = "Loading...";
+                    SystemTray.ProgressIndicator.IsIndeterminate = true;
+                }
+                if (SystemTray.ProgressIndicator.IsVisible != value)
+                { 
+                    SystemTray.ProgressIndicator.IsVisible = value;
+                }
+            }
+        }
+
         public static void Dispatch(Action a)
         {
-            disp.BeginInvoke(a);
+            dispatcher.BeginInvoke(a);
         }
 
         public static Geolocator GeoLoc
@@ -55,6 +96,8 @@ namespace App
                 return geoLoc;
             }
         }
+
+        public static bool RunningInBackground { get; set; }
 
         /// <summary>
         /// Provides easy access to the root frame of the Phone Application.
@@ -99,13 +142,16 @@ namespace App
                 PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Disabled;
             }
 
-            App.disp = App.Current.RootVisual.Dispatcher;
+            // Global UI thread dispatcher object
+            App.dispatcher = App.Current.RootVisual.Dispatcher;
         }
 
         // Code to execute when the application is launching (eg, from Start)
         // This code will not execute when the application is reactivated
         private void Application_Launching(object sender, LaunchingEventArgs e)
         {
+            RunningInBackground = false;
+            Debug.WriteLine("App launching");
         }
 
         // Code to execute when the application is activated (brought to foreground)
@@ -117,12 +163,15 @@ namespace App
             {
                 App.ViewModel.LoadData();
             }
+            RunningInBackground = false;
+            Debug.WriteLine("App activated");
         }
 
         // Code to execute when the application is deactivated (sent to background)
         // This code will not execute when the application is closing
         private void Application_Deactivated(object sender, DeactivatedEventArgs e)
         {
+            Debug.WriteLine("App deactivated");
         }
 
         // Code to execute when the application is closing (eg, user hit Back)
@@ -130,6 +179,7 @@ namespace App
         private void Application_Closing(object sender, ClosingEventArgs e)
         {
             // Ensure that required application state is persisted here.
+            Debug.WriteLine("App closing");
         }
 
         // Code to execute if a navigation fails
@@ -145,6 +195,7 @@ namespace App
         // Code to execute on Unhandled Exceptions
         private void Application_UnhandledException(object sender, ApplicationUnhandledExceptionEventArgs e)
         {
+            Debug.WriteLine("Exception: " + e.ExceptionObject.Message);
             if (Debugger.IsAttached)
             {
                 // An unhandled exception has occurred; break into the debugger
@@ -269,6 +320,12 @@ namespace App
 
                 throw;
             }
+        }
+
+        private void PhoneApplicationService_RunningInBackground(object sender, RunningInBackgroundEventArgs e)
+        {
+            RunningInBackground = true;
+            Debug.WriteLine("App running in background");
         }
     }
 }

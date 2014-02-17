@@ -142,6 +142,7 @@ namespace App
 
                 // Update UI route
                 Route route = e.Result;
+                App.ViewModel.MyRoute = route;
                 mapRoute = new MapRoute(route);
                 MapControl.AddRoute(mapRoute);
             }
