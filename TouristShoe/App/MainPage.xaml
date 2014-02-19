@@ -60,15 +60,6 @@
                       LandmarksEnabled="True"
                       PedestrianFeaturesEnabled="True" Margin="0,-20,0,0"/>
             </phone:PivotItem>
-
-            <!--Pivot item three-->
-            <phone:PivotItem Header="Route">
-                <Grid x:Name="RouteContentPanel" Grid.Row="1">
-                    <maps:Map x:Name="RouteControl"
-                      LandmarksEnabled="True"
-                      PedestrianFeaturesEnabled="True" Margin="0,-20,0,0"/>
-                </Grid>
-            </phone:PivotItem>
         </phone:Pivot>
 
         <Grid x:Name="DebugBox"
