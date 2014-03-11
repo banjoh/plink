@@ -20,9 +20,25 @@ namespace App
     {
         // Route geometry needed to generate directional commands sent to the
         // shoes.
-        public ReadOnlyCollection<GeoCoordinate> RouteGeometry { private get; set; }
+        private ReadOnlyCollection<GeoCoordinate> RouteGeometry = null;
         // Socket used to communicate with the shoes through bluetooth
 		private StreamSocket socket = new StreamSocket();
+
+        public ShoeModel()
+        {
+            App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
+            App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        }
+
+        void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "MyRoute" && sender == App.ViewModel)
+            {
+                // Store a local instance of the the RouteGeometry passed from the UI
+                RouteGeometry = App.ViewModel.MyRoute.Geometry;
+                Debug.WriteLine("ShoeModel: RouteGeometry updated");
+            }
+        }
 
         public async void ConnectToShoes()
         {
@@ -94,13 +110,32 @@ namespace App
             }
         }
 
-        public void PositionChanged(GeoCoordinate coord)
+        void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            // Implement logic that finds out if we are on course, or should turn
+            if (App.GeoLoc == sender && App.RunningInBackground)
+            {
+                GeoCoordinate coord = args.Position.Coordinate.ToGeoCoordinate();
+                // Implement logic that finds out if we are on course, or should turn
 
-            // DEBUG toast notification
-            ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
-                coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
+                // DEBUG toast notification
+                ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
+                    coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
+                // We are in the UI
+                Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
+
+                CalculateNavigationInstruction(coord);
+            }
+        }
+
+        private void CalculateNavigationInstruction(GeoCoordinate coord)
+        {
+            if (RouteGeometry == null)
+            {
+                Debug.WriteLine("ShoeModel: RouteGeometry not set");
+                return;
+            }
+
+            // Calculate instruction to send to shoe
         }
 
         private void ShowToast(string s)

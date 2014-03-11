@@ -122,7 +122,6 @@ namespace App.ViewModels
                 MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
-                App.GeoLoc.ReportInterval = 2500;
                 App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
                 App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
             }
@@ -150,8 +149,6 @@ namespace App.ViewModels
                 query.QueryAsync();
             }
 
-            App.NavShoe.RouteGeometry = MyRoute.Geometry;
-
             Debug.WriteLine("Data loaded");
             this.IsDataLoaded = true;
             App.IndicatingProgress = false;
@@ -167,21 +164,14 @@ namespace App.ViewModels
 
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            if (App.GeoLoc == sender) {
-
-                if (!App.RunningInBackground)
+            if (App.GeoLoc == sender && !App.RunningInBackground)
+            {
+                // We are in the UI
+                App.Dispatch(() =>
                 {
-                    // We are in the UI
-                    App.Dispatch(() =>
-                    {
-                        MyLocation = args.Position.Coordinate.ToGeoCoordinate();
-                        Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
-                    });
-                }
-                else
-                {
-                    App.NavShoe.PositionChanged(args.Position.Coordinate.ToGeoCoordinate());
-                }                
+                    MyLocation = args.Position.Coordinate.ToGeoCoordinate();
+                    Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+                });                
                 Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
             }
         }

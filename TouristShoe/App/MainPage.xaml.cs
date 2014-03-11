@@ -40,7 +40,7 @@ namespace App
             MapControl.Layers.Add(myCurrentLocationLayer);
             MapControl.Layers.Add(placesLayer);
 
-            // Get the current location of the device
+            // Listen to view model changes
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             App.ViewModel.Items.CollectionChanged += Items_CollectionChanged;
         }
@@ -142,6 +142,7 @@ namespace App
 
                 // Update UI route
                 Route route = e.Result;
+                Debug.WriteLine("MainPage: Update route to Models");
                 App.ViewModel.MyRoute = route;
                 mapRoute = new MapRoute(route);
                 MapControl.AddRoute(mapRoute);

@@ -20,7 +20,6 @@ namespace App
         private static MainViewModel viewModel = null;
         private static Geolocator geoLoc = null;
         private static Dispatcher dispatcher = null;
-        private static ShoeModel navShoe = null;
 
         /// <summary>
         /// A static ViewModel used by the views to bind against.
@@ -38,18 +37,7 @@ namespace App
             }
         }
 
-        public static ShoeModel NavShoe
-        {
-            get
-            {
-                if (navShoe == null)
-                {
-                    navShoe = new ShoeModel();
-                }
-                return navShoe;
-            }
-        }
-
+        public static ShoeModel ShoeModel { get; private set; }
         public static bool IndicatingProgress
         {
             get
@@ -91,6 +79,7 @@ namespace App
                 if (geoLoc == null) {
                     geoLoc = new Geolocator();
                     geoLoc.DesiredAccuracy = PositionAccuracy.High;
+                    geoLoc.ReportInterval = 2500;
                 }
 
                 return geoLoc;
@@ -144,6 +133,9 @@ namespace App
 
             // Global UI thread dispatcher object
             App.dispatcher = App.Current.RootVisual.Dispatcher;
+
+            // Initialize a the ShoeModel
+            ShoeModel = new ShoeModel();
         }
 
         // Code to execute when the application is launching (eg, from Start)
