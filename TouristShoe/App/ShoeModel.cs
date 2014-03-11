@@ -1,11 +1,14 @@
-﻿using System;
+﻿// APIS in this class should be within the restriction of the
+// ones defined here http://msdn.microsoft.com/en-us/library/windowsphone/develop/jj662941%28v=vs.105%29.aspx
+
+using System;
+using System.Collections.ObjectModel;
 using Microsoft.Phone.Shell;
 using System.Diagnostics;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
 using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
-using Microsoft.Phone.Maps.Services;
 
 // Bluetooth
 using Windows.Networking.Proximity;
@@ -13,15 +16,13 @@ using Windows.Networking.Sockets;
 
 namespace App
 {
-    public class NavigateShoes
+    public class ShoeModel
     {
-        public Route Route { get; set; }
+        // Route geometry needed to generate directional commands sent to the
+        // shoes.
+        public ReadOnlyCollection<GeoCoordinate> RouteGeometry { private get; set; }
+        // Socket used to communicate with the shoes through bluetooth
 		private StreamSocket socket = new StreamSocket();
-
-        public NavigateShoes()
-        { 
-            
-        }
 
         public async void ConnectToShoes()
         {
@@ -97,9 +98,15 @@ namespace App
         {
             // Implement logic that finds out if we are on course, or should turn
 
+            // DEBUG toast notification
+            ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
+                coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
+        }
+
+        private void ShowToast(string s)
+        {
             ShellToast toast = new ShellToast();
-            toast.Content = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + 
-                coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000");
+            toast.Content = s;
             toast.Title = "Shoe";
             toast.Show();
         }

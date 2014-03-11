@@ -20,7 +20,7 @@ namespace App
         private static MainViewModel viewModel = null;
         private static Geolocator geoLoc = null;
         private static Dispatcher dispatcher = null;
-        private static NavigateShoes navShoe = null;
+        private static ShoeModel navShoe = null;
 
         /// <summary>
         /// A static ViewModel used by the views to bind against.
@@ -38,13 +38,13 @@ namespace App
             }
         }
 
-        public static NavigateShoes NavShoe
+        public static ShoeModel NavShoe
         {
             get
             {
                 if (navShoe == null)
                 {
-                    navShoe = new NavigateShoes();
+                    navShoe = new ShoeModel();
                 }
                 return navShoe;
             }

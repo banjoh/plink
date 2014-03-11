@@ -150,7 +150,7 @@ namespace App.ViewModels
                 query.QueryAsync();
             }
 
-            App.NavShoe.Route = MyRoute;
+            App.NavShoe.RouteGeometry = MyRoute.Geometry;
 
             Debug.WriteLine("Data loaded");
             this.IsDataLoaded = true;
