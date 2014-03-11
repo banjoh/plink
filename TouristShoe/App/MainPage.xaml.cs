@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Diagnostics;
 using System.Net;
@@ -146,6 +147,21 @@ namespace App
                 App.ViewModel.MyRoute = route;
                 mapRoute = new MapRoute(route);
                 MapControl.AddRoute(mapRoute);
+            }
+        }
+
+        void PrintGeometry(Route r)
+        {
+            ReadOnlyCollection<GeoCoordinate> gCol = r.Geometry;
+
+            GeoCoordinate gg = null;
+            foreach (GeoCoordinate g in gCol)
+            {
+                if (gg != null)
+                {
+                    Debug.WriteLine("Dist = {0}, Direction = {1}", gg.GetDistanceTo(g), gg.Course);
+                }
+                gg = g;
             }
         }
 
