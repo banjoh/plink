@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -41,20 +42,14 @@ namespace App
 
         void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            foreach (var item in e.NewItems)
+            foreach (var it in e.NewItems.Cast<ItemViewModel>().Where(it => it.Location != null))
             {
-                var it = (ItemViewModel)item;
-                if (it.Location == null) continue;
                 AddPlaceToMap(it.Location.GeoCoordinate);
             }
 
             // Update the route on map
             var coords = new List<GeoCoordinate> {App.ViewModel.MyLocation};
-            foreach (var it in App.ViewModel.Items)
-            {
-                if (it.Location == null) continue;
-                coords.Add(it.Location.GeoCoordinate);
-            }
+            coords.AddRange(from it in App.ViewModel.Items where it.Location != null select it.Location.GeoCoordinate);
 
             UpdateRoute(coords);
         }
@@ -62,11 +57,13 @@ namespace App
         private void UpdateMyCurrectLocation()
         {
             // Create my location marker
-            var locCircle = new Ellipse();
-            locCircle.Fill = new SolidColorBrush(Colors.Green);
-            locCircle.Height = 20;
-            locCircle.Width = 20;
-            locCircle.Opacity = 50;
+            var locCircle = new Ellipse
+            {
+                Fill = new SolidColorBrush(Colors.Green),
+                Height = 20,
+                Width = 20,
+                Opacity = 50
+            };
 
             var overlay = new MapOverlay
             {

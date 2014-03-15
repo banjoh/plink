@@ -55,11 +55,9 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _myRoute)
-                {
-                    if (value != null) _myRoute = value;
-                    NotifyPropertyChanged("MyRoute");
-                }
+                if (value == _myRoute) return;
+                if (value != null) _myRoute = value;
+                NotifyPropertyChanged("MyRoute");
             }
         }
 
@@ -146,9 +144,9 @@ namespace App.ViewModels
                 query.QueryAsync();
             }
 
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime three", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime four", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
+            Items.Add(new ItemViewModel { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
+            Items.Add(new ItemViewModel { LineOne = "runtime three", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
+            Items.Add(new ItemViewModel { LineOne = "runtime four", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
             
             Debug.WriteLine("Data loaded");
             IsDataLoaded = true;
@@ -178,7 +176,7 @@ namespace App.ViewModels
         void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
         {
             if (e.Result.Count <= 0) return;
-            MapLocation loc = e.Result[0];
+            var loc = e.Result[0];
             Items.Add(new ItemViewModel { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
         }
 

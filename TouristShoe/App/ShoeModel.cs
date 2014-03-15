@@ -20,7 +20,7 @@ namespace App
     {
         // Route geometry needed to generate directional commands sent to the
         // shoes.
-        private ReadOnlyCollection<GeoCoordinate> _routeGeometry = null;
+        private ReadOnlyCollection<GeoCoordinate> _routeGeometry;
         // Socket used to communicate with the shoes through bluetooth
 		private readonly StreamSocket _socket = new StreamSocket();
 
@@ -54,9 +54,9 @@ namespace App
             else
             {
                 // Select a paired device. In this example, just pick the first one.
-                PeerInformation selectedDevice = pairedDevices[0];
+                var selectedDevice = pairedDevices[0];
 
-                foreach(PeerInformation p in pairedDevices)
+                foreach(var p in pairedDevices)
                 {
                     Debug.WriteLine(p.DisplayName);
                 } 
@@ -140,5 +140,10 @@ namespace App
             var toast = new ShellToast {Content = s, Title = "Shoe"};
             toast.Show();
         }
+
+
+
+       
+
     }
 }
