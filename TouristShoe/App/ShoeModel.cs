@@ -20,9 +20,9 @@ namespace App
     {
         // Route geometry needed to generate directional commands sent to the
         // shoes.
-        private ReadOnlyCollection<GeoCoordinate> RouteGeometry = null;
+        private ReadOnlyCollection<GeoCoordinate> _routeGeometry = null;
         // Socket used to communicate with the shoes through bluetooth
-		private StreamSocket socket = new StreamSocket();
+		private readonly StreamSocket _socket = new StreamSocket();
 
         public ShoeModel()
         {
@@ -35,7 +35,7 @@ namespace App
             if (e.PropertyName == "MyRoute" && sender == App.ViewModel)
             {
                 // Store a local instance of the the RouteGeometry passed from the UI
-                RouteGeometry = App.ViewModel.MyRoute.Geometry;
+                _routeGeometry = App.ViewModel.MyRoute.Geometry;
                 Debug.WriteLine("ShoeModel: RouteGeometry updated");
             }
         }
@@ -69,7 +69,7 @@ namespace App
                 // in value from 1 to 30.
                 try
                 {
-                    await socket.ConnectAsync(selectedDevice.HostName, "1");
+                    await _socket.ConnectAsync(selectedDevice.HostName, "1");
                 }
                 catch(Exception ex)
                 {
@@ -84,7 +84,7 @@ namespace App
                 // Create the data writer object backed by the in-memory stream.
             try
             {
-                using (var dataWriter = new Windows.Storage.Streams.DataWriter(socket.OutputStream))
+                using (var dataWriter = new Windows.Storage.Streams.DataWriter(_socket.OutputStream))
                 {
                     // Parse the input stream and write each element separately.
                     dataWriter.WriteByte(1);
@@ -112,37 +112,30 @@ namespace App
 
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            if (App.GeoLoc == sender && App.RunningInBackground)
-            {
-                GeoCoordinate coord = args.Position.Coordinate.ToGeoCoordinate();
-                // Implement logic that finds out if we are on course, or should turn
+            if (App.GeoLoc != sender || !App.RunningInBackground) return;
+            var coord = args.Position.Coordinate.ToGeoCoordinate();
+            // Implement logic that finds out if we are on course, or should turn
 
-                // DEBUG toast notification
-                ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
-                    coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
-                // We are in the UI
-                Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
+            // DEBUG toast notification
+            ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
+                      coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
+            // We are in the UI
+            Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
 
-                CalculateNavigationInstruction(coord);
-            }
+            CalculateNavigationInstruction(coord);
         }
 
         private void CalculateNavigationInstruction(GeoCoordinate coord)
         {
-            if (RouteGeometry == null)
-            {
-                Debug.WriteLine("ShoeModel: RouteGeometry not set");
-                return;
-            }
+            if (_routeGeometry != null) return;
+            Debug.WriteLine("ShoeModel: RouteGeometry not set");
 
             // Calculate instruction to send to shoe
         }
 
-        private void ShowToast(string s)
+        private static void ShowToast(string s)
         {
-            ShellToast toast = new ShellToast();
-            toast.Content = s;
-            toast.Title = "Shoe";
+            var toast = new ShellToast {Content = s, Title = "Shoe"};
             toast.Show();
         }
     }
