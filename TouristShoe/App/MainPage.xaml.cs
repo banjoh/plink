@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Diagnostics;
-using System.Net;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Navigation;
-using Microsoft.Phone.Controls;
-using Microsoft.Phone.Shell;
-using App.Resources;
 using System.Windows.Shapes;
 using System.Windows.Media;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
-using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
+//Provides the Geocoordinate class.
 using Microsoft.Phone.Maps.Controls;
 using Microsoft.Phone.Maps.Services;
 
@@ -23,11 +16,11 @@ using App.ViewModels;
 
 namespace App
 {
-    public partial class MainPage : PhoneApplicationPage
+    public partial class MainPage
     {
-        private readonly MapLayer myCurrentLocationLayer = new MapLayer();
-        private readonly MapLayer placesLayer = new MapLayer();
-        private MapRoute mapRoute = null;
+        private readonly MapLayer _myCurrentLocationLayer = new MapLayer();
+        private readonly MapLayer _placesLayer = new MapLayer();
+        private MapRoute _mapRoute;
         
         // Constructor
         public MainPage()
@@ -38,8 +31,8 @@ namespace App
             DataContext = App.ViewModel;
             MapControl.Layers.Clear();
 
-            MapControl.Layers.Add(myCurrentLocationLayer);
-            MapControl.Layers.Add(placesLayer);
+            MapControl.Layers.Add(_myCurrentLocationLayer);
+            MapControl.Layers.Add(_placesLayer);
 
             // Listen to view model changes
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -48,17 +41,18 @@ namespace App
 
         void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            foreach (object item in e.NewItems)
+            foreach (var item in e.NewItems)
             {
-                ItemViewModel it = (ItemViewModel)item;
+                var it = (ItemViewModel)item;
+                if (it.Location == null) continue;
                 AddPlaceToMap(it.Location.GeoCoordinate);
             }
 
             // Update the route on map
-            List<GeoCoordinate> coords = new List<GeoCoordinate>();
-            coords.Add(App.ViewModel.MyLocation);
-            foreach (ItemViewModel it in App.ViewModel.Items)
+            var coords = new List<GeoCoordinate> {App.ViewModel.MyLocation};
+            foreach (var it in App.ViewModel.Items)
             {
+                if (it.Location == null) continue;
                 coords.Add(it.Location.GeoCoordinate);
             }
 
@@ -68,21 +62,21 @@ namespace App
         private void UpdateMyCurrectLocation()
         {
             // Create my location marker
-            Ellipse locCircle = new Ellipse();
+            var locCircle = new Ellipse();
             locCircle.Fill = new SolidColorBrush(Colors.Green);
             locCircle.Height = 20;
             locCircle.Width = 20;
             locCircle.Opacity = 50;
 
-            MapOverlay overlay = new MapOverlay()
+            var overlay = new MapOverlay
             {
                 Content = locCircle,
                 GeoCoordinate = App.ViewModel.MyLocation,
                 PositionOrigin = new Point(0, 0)
             };
 
-            myCurrentLocationLayer.Clear();
-            myCurrentLocationLayer.Add(overlay);
+            _myCurrentLocationLayer.Clear();
+            _myCurrentLocationLayer.Add(overlay);
 
             // TODO: Use rectangular area
             MapControl.SetView(App.ViewModel.MyLocation, 15, MapAnimationKind.Parabolic);
@@ -99,63 +93,59 @@ namespace App
         private void AddPlaceToMap(GeoCoordinate coord)
         {
             // Create my location marker
-            Ellipse locCircle = new Ellipse();
-            locCircle.Fill = new SolidColorBrush(Colors.Red);
-            locCircle.Height = 20;
-            locCircle.Width = 20;
-            locCircle.Opacity = 50;
+            var locCircle = new Ellipse {Fill = new SolidColorBrush(Colors.Red), Height = 20, Width = 20, Opacity = 50};
 
-            MapOverlay overlay = new MapOverlay()
+            var overlay = new MapOverlay
             {
                 Content = locCircle,
                 GeoCoordinate = coord,
                 PositionOrigin = new Point(0, 0)
             };
 
-            placesLayer.Add(overlay);
+            _placesLayer.Add(overlay);
 
             // TODO: Use rectangular area
             MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
-        private void UpdateRoute(List<GeoCoordinate> route)
+        private void UpdateRoute(IReadOnlyCollection<GeoCoordinate> route)
         {
-            // Cancel previous query
-            RouteQuery routeQuery = new RouteQuery();
-
+            if (route.Count < 2) return;
+            
             // Get the route for the new set
-            routeQuery.TravelMode = TravelMode.Walking;
-            routeQuery.RouteOptimization = RouteOptimization.MinimizeDistance;
-            routeQuery.Waypoints = route;
+            var routeQuery = new RouteQuery
+            {
+                TravelMode = TravelMode.Walking,
+                RouteOptimization = RouteOptimization.MinimizeDistance,
+                Waypoints = route
+            };
             routeQuery.QueryCompleted += routeQuery_QueryCompleted;
             routeQuery.QueryAsync();
         }
 
         void routeQuery_QueryCompleted(object sender, QueryCompletedEventArgs<Route> e)
         {
-            if (e.Error == null)
+            if (e.Error != null) return;
+            // Remove old route
+            if (_mapRoute != null)
             {
-                // Remove old route
-                if (mapRoute != null)
-                {
-                    MapControl.RemoveRoute(mapRoute);
-                }
-
-                // Update UI route
-                Route route = e.Result;
-                Debug.WriteLine("MainPage: Update route to Models");
-                App.ViewModel.MyRoute = route;
-                mapRoute = new MapRoute(route);
-                MapControl.AddRoute(mapRoute);
+                MapControl.RemoveRoute(_mapRoute);
             }
+
+            // Update UI route
+            Route route = e.Result;
+            Debug.WriteLine("MainPage: Update route to Models");
+            App.ViewModel.MyRoute = route;
+            _mapRoute = new MapRoute(route);
+            MapControl.AddRoute(_mapRoute);
         }
 
-        void PrintGeometry(Route r)
+        void PrintGeometry(IRoutePath r)
         {
-            ReadOnlyCollection<GeoCoordinate> gCol = r.Geometry;
+            var gCol = r.Geometry;
 
             GeoCoordinate gg = null;
-            foreach (GeoCoordinate g in gCol)
+            foreach (var g in gCol)
             {
                 if (gg != null)
                 {
@@ -177,6 +167,11 @@ namespace App
         private void ApplicationBarMenuItem_Click(object sender, EventArgs e)
         {
             DebugBox.Visibility = DebugBox.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void StackPanel_Tap(object sender, System.Windows.Input.GestureEventArgs e)
+        {
+            NavigationService.Navigate(new Uri("/PlacesDetails.xaml", UriKind.Relative));
         }
     }
 }
