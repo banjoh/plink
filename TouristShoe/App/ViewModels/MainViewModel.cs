@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using App.Resources;
 using System.Diagnostics;
 using System.Windows;
@@ -18,7 +19,7 @@ namespace App.ViewModels
     {
         public MainViewModel()
         {
-            this.Items = new ObservableCollection<ItemViewModel>();
+            Items = new ObservableCollection<ItemViewModel>();
         }
 
         /// <summary>
@@ -39,32 +40,30 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _myLoc)
-                {
-                    _myLoc = value == null ? new GeoCoordinate(0,0) : value;
-                    NotifyPropertyChanged("MyLocation");
-                }
+                if (value == _myLoc) return;
+                _myLoc = value ?? new GeoCoordinate(0,0);
+                NotifyPropertyChanged("MyLocation");
             }
         }
 
-        private Route myRoute = default(Route);
+        private Route _myRoute = default(Route);
         public Route MyRoute
         {
             get
             {
-                return myRoute;
+                return _myRoute;
             }
             set
             {
-                if (value != myRoute)
+                if (value != _myRoute)
                 {
-                    myRoute = value == null ? default(Route) : value;
+                    if (value != null) _myRoute = value;
                     NotifyPropertyChanged("MyRoute");
                 }
             }
         }
 
-        private Queue<string> logs = new Queue<string>();
+        private readonly Queue<string> _logs = new Queue<string>();
         /// <summary>
         /// Sample ViewModel property; this property is used in the view to display its value using a Binding
         /// </summary>
@@ -73,8 +72,8 @@ namespace App.ViewModels
         {
             get
             {
-                StringBuilder b = new StringBuilder();
-                foreach (string s in logs)
+                var b = new StringBuilder();
+                foreach (var s in _logs)
                 {
                     b.AppendLine(s);
                 }
@@ -83,10 +82,10 @@ namespace App.ViewModels
             }
             set
             {
-                logs.Enqueue(value);
-                if (logs.Count >= 4)
+                _logs.Enqueue(value);
+                if (_logs.Count >= 4)
                 {
-                    logs.Dequeue();
+                    _logs.Dequeue();
                 }
                 NotifyPropertyChanged("Log");
             }
@@ -118,7 +117,7 @@ namespace App.ViewModels
             try
             {
                 // Get the current position
-                Geoposition myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
+                var myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
                 MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
@@ -132,29 +131,27 @@ namespace App.ViewModels
             }
 
             // Simulate loading stored locations
-            List<string> places = new List<string>();
-            places.Add("Otaniementie 9, 02150");
-            places.Add("Betongblandargränden 5, 02150");
-            places.Add("Otakaari 1, 02150");
-            places.Add("Keilaranta 17, 02150");
-            places.Add("Teknikvägen 1, 02150");
-
-            foreach (string p in places)
+            var places = new List<string>
             {
-                GeocodeQuery query = new GeocodeQuery();
-                query.SearchTerm = p;
-                query.MaxResultCount = 1;
-                query.GeoCoordinate = MyLocation;
+                "Otaniementie 9, 02150",
+                "Betongblandargränden 5, 02150",
+                "Otakaari 1, 02150",
+                "Keilaranta 17, 02150",
+                "Teknikvägen 1, 02150"
+            };
+
+            foreach (var query in places.Select(p => new GeocodeQuery {SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation}))
+            {
                 query.QueryCompleted += query_QueryCompleted;
                 query.QueryAsync();
             }
 
             Debug.WriteLine("Data loaded");
-            this.IsDataLoaded = true;
+            IsDataLoaded = true;
             App.IndicatingProgress = false;
         }
 
-        void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
+        static void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
         {
             if (App.GeoLoc == sender)
             {
@@ -164,31 +161,27 @@ namespace App.ViewModels
 
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            if (App.GeoLoc == sender && !App.RunningInBackground)
+            if (App.GeoLoc != sender || App.RunningInBackground) return;
+            // We are in the UI
+            App.Dispatch(() =>
             {
-                // We are in the UI
-                App.Dispatch(() =>
-                {
-                    MyLocation = args.Position.Coordinate.ToGeoCoordinate();
-                    Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
-                });                
-                Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
-            }
+                MyLocation = args.Position.Coordinate.ToGeoCoordinate();
+                Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+            });                
+            Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
         }
 
         void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
         {
-            if (e.Result.Count > 0)
-            {
-                MapLocation loc = e.Result[0];
-                this.Items.Add(new ItemViewModel() { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
-            }
+            if (e.Result.Count <= 0) return;
+            MapLocation loc = e.Result[0];
+            Items.Add(new ItemViewModel { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String propertyName)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
+            var handler = PropertyChanged;
             if (null != handler)
             {
                 handler(this, new PropertyChangedEventArgs(propertyName));
