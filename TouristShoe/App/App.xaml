@@ -7,6 +7,9 @@
     <!--Application Resources-->
     <Application.Resources>
         <local:LocalizedStrings xmlns:local="clr-namespace:App" x:Key="LocalizedStrings"></local:LocalizedStrings>
+        
+        <!-- Theme colour -->
+        <SolidColorBrush x:Key="PrimaryColorBrush" Color="#FF00C13A" />
     </Application.Resources>
 
     <Application.ApplicationLifetimeObjects>

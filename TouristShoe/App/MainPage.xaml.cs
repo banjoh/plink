@@ -11,6 +11,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Phone.Maps.Controls;
 using Microsoft.Phone.Maps.Services;
+using System.Threading;
 using App.ViewModels;
 
 namespace App
@@ -26,6 +27,8 @@ namespace App
         public MainPage()
         {
             InitializeComponent();
+
+            Thread.Sleep(1000);
 
             // Set the data context of the listbox control to the sample data
             DataContext = App.ViewModel;

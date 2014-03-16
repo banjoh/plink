@@ -153,6 +153,14 @@
     </Content>
     <Content Include="Assets\white_church.jpg" />
     <Content Include="README_FIRST.txt" />
+    <Content Include="Resources\box_rounded_green.png" />
+    <Content Include="Resources\map_symbol_green.png" />
+    <Content Include="Resources\plus_green.png" />
+    <Content Include="Resources\shoes_connected.png" />
+    <Content Include="Resources\shoes_left_red.png" />
+    <Content Include="Resources\shoes_notconnected.png" />
+    <Content Include="Resources\shoes_right_red.png" />
+    <Content Include="SplashScreenImage.jpg" />
     <Content Include="Toolkit.Content\ApplicationBar.Add.png" />
     <Content Include="Toolkit.Content\ApplicationBar.Cancel.png" />
     <Content Include="Toolkit.Content\ApplicationBar.Check.png" />
