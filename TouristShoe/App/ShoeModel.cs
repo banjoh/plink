@@ -96,10 +96,52 @@ namespace App
             }
         }
 		
-		private async void DoSomethingUseful()
-        {  
-                // Create the data writer object backed by the in-memory stream.
-            try
+        void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
+        {
+            if (App.GeoLoc != sender) return;
+            var coord = args.Position.Coordinate.ToGeoCoordinate();
+            // Implement logic that finds out if we are on course, or should turn
+
+            // We are in the UI
+            Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
+
+            CalculateNavigationInstruction(coord);
+        }
+
+        private void CalculateNavigationInstruction(GeoCoordinate coord)
+        {
+            if (_maneuvers.Count <= 0)
+            {
+                Debug.WriteLine("ShoeModel: RouteGeometry not set");
+                return;
+            }
+
+            // Calculate instruction to send to shoe
+            // http://stackoverflow.com/questions/8564428/check-if-user-is-near-route-checkpoint-with-gps
+            RouteManeuver man = _maneuvers.First();
+            double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
+            if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
+            {
+                InstructShoes(man);
+                if (dist < 5)   // Remove this maneuver, lets get the nex one
+                {
+                    _maneuvers.Dequeue();
+                }
+            }
+
+            App.ViewModel.HeadingLocation = man.StartGeoCoordinate;
+
+            // Log
+            var s = "Dist: " + dist + ", direction = " + man.InstructionKind; 
+            App.Log(s);
+        }
+
+        private void InstructShoes(RouteManeuver maneuver)
+        {
+            ShowToast("Now turn " + maneuver.InstructionKind);
+
+            // Create the data writer object backed by the in-memory stream.
+            /*try
             {
                 using (var dataWriter = new Windows.Storage.Streams.DataWriter(_socket.OutputStream))
                 {
@@ -124,57 +166,7 @@ namespace App
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-            }
-        }
-
-        void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
-        {
-            if (App.GeoLoc != sender) return;
-            var coord = args.Position.Coordinate.ToGeoCoordinate();
-            // Implement logic that finds out if we are on course, or should turn
-
-            // We are in the UI
-            Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
-
-            CalculateNavigationInstruction(coord);
-        }
-
-        private void CalculateNavigationInstruction(GeoCoordinate coord)
-        {
-            if (_maneuvers.Count <= 0)
-            {
-                Debug.WriteLine("ShoeModel: RouteGeometry not set");
-                return;
-            }
-
-            // Calculate instruction to send to shoe
-            RouteManeuver man = _maneuvers.First<RouteManeuver>();
-            double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
-            if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
-            {
-                InstructShoes(man);
-                if (dist < 5)   // Remove this maneuver, lets get the nex one
-                {
-                    _maneuvers.Dequeue();
-                }
-            }
-
-            App.ViewModel.HeadingLocation = man.StartGeoCoordinate;
-
-            // Log
-            string s = "Dist: " + dist + ", direction = " + man.InstructionKind; 
-            if (!App.RunningInBackground)
-            {
-                App.Dispatch(() =>
-                {
-                    App.ViewModel.Log = s;
-                });
-            }
-        }
-
-        private void InstructShoes(RouteManeuver maneuver)
-        {
-            ShowToast("Now turn " + maneuver.InstructionKind);
+            }*/
         }
 
         private static void ShowToast(string s)
@@ -184,13 +176,7 @@ namespace App
                 var toast = new ShellToast { Content = s, Title = "Shoe" };
                 toast.Show();
             }
-            else
-            {
-                App.Dispatch(() =>
-                {
-                    App.ViewModel.Log = s;
-                });
-            }
+            App.Log(s);
         }
     }
 }

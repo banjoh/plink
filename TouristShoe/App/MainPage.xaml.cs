@@ -1,18 +1,16 @@
-﻿using System;
+﻿//Maps & Location namespaces
+// Provides the GeoCoordinate class.
+//Provides the Geocoordinate class.
+using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Device.Location;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Media;
-
-//Maps & Location namespaces
-using System.Device.Location; // Provides the GeoCoordinate class.
-//Provides the Geocoordinate class.
 using Microsoft.Phone.Maps.Controls;
 using Microsoft.Phone.Maps.Services;
-
 using App.ViewModels;
 
 namespace App
@@ -35,6 +33,7 @@ namespace App
 
             MapControl.Layers.Add(_myCurrentLocationLayer);
             MapControl.Layers.Add(_placesLayer);
+            MapControl.Layers.Add(_headingLayer);
 
             // Listen to view model changes
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -96,7 +95,7 @@ namespace App
 
             if (e.PropertyName == "HeadingLocation")
             {
-                AddHeadingLocToMap(App.ViewModel.HeadingLocation);
+                App.Dispatch(() => AddHeadingLocToMap(App.ViewModel.HeadingLocation));
             }
         }
 
@@ -112,8 +111,7 @@ namespace App
                 PositionOrigin = new Point(0, 0)
             };
 
-            _headingLayer.Clear();
-            _headingLayer.Add(overlay);
+            _placesLayer.Add(overlay);
 
             // TODO: Use rectangular area
             MapControl.SetView(App.ViewModel.MyLocation, 15);
@@ -167,32 +165,6 @@ namespace App
             App.ViewModel.MyRoute = route;
             _mapRoute = new MapRoute(route);
             MapControl.AddRoute(_mapRoute);
-
-            //DrawRouteCircles(route);
-        }
-
-        void DrawRouteCircles(Route r)
-        {
-            foreach (RouteLeg leg in r.Legs)
-            {
-                foreach (RouteManeuver man in leg.Maneuvers)
-                {
-                    GeoCoordinate coord = man.StartGeoCoordinate;
-                    var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Brown), Height = 50, Width = 50 };
-
-                    var overlay = new MapOverlay
-                    {
-                        Content = locCircle,
-                        GeoCoordinate = coord,
-                        PositionOrigin = new Point(0, 0)
-                    };
-
-                    _placesLayer.Add(overlay);
-                }
-            }
-
-            // TODO: Use rectangular area
-            MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
         void PrintGeometry(IRoutePath r)

@@ -14,7 +14,7 @@ using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
 
 namespace App
 {
-    public partial class App
+    public partial class App : Application
     {
         private static MainViewModel _viewModel;
         private static Geolocator _geoLoc;
@@ -33,13 +33,24 @@ namespace App
             }
         }
 
+        public static void Log(string s)
+        {
+            Debug.WriteLine(s);
+            if (!RunningInBackground)
+            {
+                Dispatch(() => ViewModel.Log = s);
+            }
+        }
+
         public static ShoeModel ShoeModel { get; private set; }
         public static bool IndicatingProgress
         {
             get
             {
-                if (SystemTray.ProgressIndicator != null) return SystemTray.ProgressIndicator.IsVisible;
-                SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
+                if (SystemTray.ProgressIndicator == null)
+                {
+                    SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
+                }
                 return SystemTray.ProgressIndicator.IsVisible;
             }
 
@@ -49,10 +60,7 @@ namespace App
                 {
                     SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
                 }
-                if (SystemTray.ProgressIndicator.IsVisible != value)
-                { 
-                    SystemTray.ProgressIndicator.IsVisible = value;
-                }
+                SystemTray.ProgressIndicator.IsVisible = value;
             }
         }
 
@@ -66,8 +74,10 @@ namespace App
             get
             {
                 // Delay creation of the view model until necessary
-                return _geoLoc ??
-                       (_geoLoc = new Geolocator {DesiredAccuracy = PositionAccuracy.High, ReportInterval = 2500});
+                if (_geoLoc != null) return _geoLoc;
+                _geoLoc = new Geolocator {DesiredAccuracy = PositionAccuracy.High, ReportInterval = 2500};
+
+                return _geoLoc;
             }
         }
 
@@ -210,7 +220,7 @@ namespace App
         private void CompleteInitializePhoneApplication(object sender, NavigationEventArgs e)
         {
             // Set the root visual to allow the application to render
-            if (RootVisual != null && RootVisual != RootFrame)
+            if (RootVisual != RootFrame)
                 RootVisual = RootFrame;
 
             // Remove this handler since it is no longer needed
@@ -237,7 +247,6 @@ namespace App
             // For UI consistency, clear the entire page stack
             while (RootFrame.RemoveBackEntry() != null)
             {
-                ; // do nothing
             }
         }
 

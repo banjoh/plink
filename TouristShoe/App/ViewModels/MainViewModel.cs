@@ -46,11 +46,9 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _myLoc)
-                {
-                    _myLoc = value == null ? new GeoCoordinate(0,0) : value;
-                    NotifyPropertyChanged("MyLocation");
-                }
+                if (value == _myLoc) return;
+                _myLoc = value ?? new GeoCoordinate(0,0);
+                NotifyPropertyChanged("MyLocation");
             }
         }
 
@@ -62,28 +60,24 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _headingLoc)
-                {
-                    _headingLoc = value == null ? new GeoCoordinate(0, 0) : value;
-                    NotifyPropertyChanged("HeadingLocation");
-                }
+                if (value == _headingLoc) return;
+                _headingLoc = value ?? new GeoCoordinate(0, 0);
+                NotifyPropertyChanged("HeadingLocation");
             }
         }
 
-        private Route myRoute = default(Route);
+        private Route _myRoute = default(Route);
         public Route MyRoute
         {
             get
             {
-                return myRoute;
+                return _myRoute;
             }
             set
             {
-                if (value != myRoute)
-                {
-                    myRoute = value == null ? default(Route) : value;
-                    NotifyPropertyChanged("MyRoute");
-                }
+                if (value == _myRoute) return;
+                _myRoute = value ?? default(Route);
+                NotifyPropertyChanged("MyRoute");
             }
         }
 
@@ -96,7 +90,7 @@ namespace App.ViewModels
         {
             get
             {
-                StringBuilder b = new StringBuilder();
+                var b = new StringBuilder();
                 foreach (string s in logs)
                 {
                     b.AppendLine(s);
@@ -155,21 +149,24 @@ namespace App.ViewModels
             }
 
             // Simulate loading stored locations
-            List<string> places = new List<string>();
-            places.Add("Otaniementie 9, 02150");
-            places.Add("Betongblandargränden 5, 02150");
-            places.Add("Otakaari 1, 02150");
-            places.Add("Keilaranta 17, 02150");
-            places.Add("Teknikvägen 1, 02150");
+            var places = new List<string>
+            {
+                /*"Otaniementie 9, 02150",
+                "Betongblandargränden 5, 02150",
+                "Otakaari 1, 02150",
+                "Keilaranta 17, 02150",
+                "Teknikvägen 1, 02150"*/
+
+                "Kyhhkysmäki 2, 02650",
+                "Lintuvaarantie 30, 02650",
+                "Sepelkyyhkyntie 2, 02650"
+            };
 
             _placesNotGeoCoded = places.Count;
             
-            foreach (string p in places)
+            foreach (var p in places)
             {
-                GeocodeQuery query = new GeocodeQuery();
-                query.SearchTerm = p;
-                query.MaxResultCount = 1;
-                query.GeoCoordinate = MyLocation;
+                var query = new GeocodeQuery {SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation};
                 query.QueryCompleted += query_QueryCompleted;
                 query.QueryAsync();
             }
@@ -191,32 +188,29 @@ namespace App.ViewModels
 
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            if (App.GeoLoc == sender && !App.RunningInBackground)
+            if (App.GeoLoc != sender || App.RunningInBackground) return;
+            
+            // We are in the UI
+            App.Dispatch(() =>
             {
-                // We are in the UI
-                App.Dispatch(() =>
-                {
-                    MyLocation = args.Position.Coordinate.ToGeoCoordinate();
-                    //Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
-                });                
-                Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
-            }
+                MyLocation = args.Position.Coordinate.ToGeoCoordinate();
+                //Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+            });                
+            Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
         }
 
         void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
         {
             _placesNotGeoCoded--;
-            if (e.Result.Count > 0)
-            {
-                MapLocation loc = e.Result[0];
-                this.Items.Add(new ItemViewModel() { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
-            }
+            if (e.Result.Count <= 0) return;
+            var loc = e.Result[0];
+            this.Items.Add(new ItemViewModel() { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String propertyName)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
+            var handler = PropertyChanged;
             if (null != handler)
             {
                 handler(this, new PropertyChangedEventArgs(propertyName));
