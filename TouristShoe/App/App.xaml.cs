@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Resources;
 using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Navigation;
@@ -15,11 +14,11 @@ using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
 
 namespace App
 {
-    public partial class App : Application
+    public partial class App
     {
-        private static MainViewModel viewModel = null;
-        private static Geolocator geoLoc = null;
-        private static Dispatcher dispatcher = null;
+        private static MainViewModel _viewModel;
+        private static Geolocator _geoLoc;
+        private static Dispatcher _dispatcher;
 
         /// <summary>
         /// A static ViewModel used by the views to bind against.
@@ -30,10 +29,7 @@ namespace App
             get
             {
                 // Delay creation of the view model until necessary
-                if (viewModel == null)
-                    viewModel = new MainViewModel();
-
-                return viewModel;
+                return _viewModel ?? (_viewModel = new MainViewModel());
             }
         }
 
@@ -42,12 +38,8 @@ namespace App
         {
             get
             {
-                if (SystemTray.ProgressIndicator == null)
-                {
-                    SystemTray.ProgressIndicator = new ProgressIndicator();
-                    SystemTray.ProgressIndicator.Text = "Loading...";
-                    SystemTray.ProgressIndicator.IsIndeterminate = true;
-                }
+                if (SystemTray.ProgressIndicator != null) return SystemTray.ProgressIndicator.IsVisible;
+                SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
                 return SystemTray.ProgressIndicator.IsVisible;
             }
 
@@ -55,9 +47,7 @@ namespace App
             {
                 if (SystemTray.ProgressIndicator == null)
                 {
-                    SystemTray.ProgressIndicator = new ProgressIndicator();
-                    SystemTray.ProgressIndicator.Text = "Loading...";
-                    SystemTray.ProgressIndicator.IsIndeterminate = true;
+                    SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
                 }
                 if (SystemTray.ProgressIndicator.IsVisible != value)
                 { 
@@ -68,7 +58,7 @@ namespace App
 
         public static void Dispatch(Action a)
         {
-            dispatcher.BeginInvoke(a);
+            _dispatcher.BeginInvoke(a);
         }
 
         public static Geolocator GeoLoc
@@ -76,13 +66,8 @@ namespace App
             get
             {
                 // Delay creation of the view model until necessary
-                if (geoLoc == null) {
-                    geoLoc = new Geolocator();
-                    geoLoc.DesiredAccuracy = PositionAccuracy.High;
-                    geoLoc.ReportInterval = 2500;
-                }
-
-                return geoLoc;
+                return _geoLoc ??
+                       (_geoLoc = new Geolocator {DesiredAccuracy = PositionAccuracy.High, ReportInterval = 2500});
             }
         }
 
@@ -115,7 +100,7 @@ namespace App
             if (Debugger.IsAttached)
             {
                 // Display the current frame rate counters
-                Application.Current.Host.Settings.EnableFrameRateCounter = true;
+                Current.Host.Settings.EnableFrameRateCounter = true;
 
                 // Show the areas of the app that are being redrawn in each frame.
                 //Application.Current.Host.Settings.EnableRedrawRegions = true;
@@ -132,7 +117,7 @@ namespace App
             }
 
             // Global UI thread dispatcher object
-            App.dispatcher = App.Current.RootVisual.Dispatcher;
+            _dispatcher = Current.RootVisual.Dispatcher;
 
             // Initialize a the ShoeModel
             ShoeModel = new ShoeModel();
@@ -151,9 +136,9 @@ namespace App
         private void Application_Activated(object sender, ActivatedEventArgs e)
         {
             // Ensure that application state is restored appropriately
-            if (!App.ViewModel.IsDataLoaded)
+            if (!ViewModel.IsDataLoaded)
             {
-                App.ViewModel.LoadData();
+                ViewModel.LoadData();
             }
             RunningInBackground = false;
             Debug.WriteLine("App activated");
@@ -198,12 +183,12 @@ namespace App
         #region Phone application initialization
 
         // Avoid double-initialization
-        private bool phoneApplicationInitialized = false;
+        private bool _phoneApplicationInitialized = false;
 
         // Do not add any additional code to this method
         private void InitializePhoneApplication()
         {
-            if (phoneApplicationInitialized)
+            if (_phoneApplicationInitialized)
                 return;
 
             // Create the frame but don't set it as RootVisual yet; this allows the splash
@@ -218,14 +203,14 @@ namespace App
             RootFrame.Navigated += CheckForResetNavigation;
 
             // Ensure we don't initialize again
-            phoneApplicationInitialized = true;
+            _phoneApplicationInitialized = true;
         }
 
         // Do not add any additional code to this method
         private void CompleteInitializePhoneApplication(object sender, NavigationEventArgs e)
         {
             // Set the root visual to allow the application to render
-            if (RootVisual != RootFrame)
+            if (RootVisual != null && RootVisual != RootFrame)
                 RootVisual = RootFrame;
 
             // Remove this handler since it is no longer needed

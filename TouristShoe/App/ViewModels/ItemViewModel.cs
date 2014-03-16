@@ -19,11 +19,9 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _lineOne)
-                {
-                    _lineOne = value;
-                    NotifyPropertyChanged("LineOne");
-                }
+                if (value == _lineOne) return;
+                _lineOne = value;
+                NotifyPropertyChanged("LineOne");
             }
         }
 
@@ -82,18 +80,16 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _location)
-                {
-                    _location = value;
-                    NotifyPropertyChanged("Location");
-                }
+                if (value == _location) return;
+                _location = value;
+                NotifyPropertyChanged("Location");
             }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String propertyName)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
+            var handler = PropertyChanged;
             if (null != handler)
             {
                 handler(this, new PropertyChangedEventArgs(propertyName));
