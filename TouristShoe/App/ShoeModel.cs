@@ -3,12 +3,15 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using Microsoft.Phone.Shell;
 using System.Diagnostics;
+using System.Linq;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
 using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
+using Microsoft.Phone.Maps.Services;
 
 // Bluetooth
 using Windows.Networking.Proximity;
@@ -20,7 +23,9 @@ namespace App
     {
         // Route geometry needed to generate directional commands sent to the
         // shoes.
-        private ReadOnlyCollection<GeoCoordinate> _routeGeometry = null;
+        private Route _route = null;
+        private Queue<RouteManeuver> _maneuvers = new Queue<RouteManeuver>();
+
         // Socket used to communicate with the shoes through bluetooth
 		private readonly StreamSocket _socket = new StreamSocket();
 
@@ -35,8 +40,20 @@ namespace App
             if (e.PropertyName == "MyRoute" && sender == App.ViewModel)
             {
                 // Store a local instance of the the RouteGeometry passed from the UI
-                _routeGeometry = App.ViewModel.MyRoute.Geometry;
-                Debug.WriteLine("ShoeModel: RouteGeometry updated");
+                //_routeGeometry = App.ViewModel.MyRoute.Geometry;
+                _route = App.ViewModel.MyRoute;
+                
+                // Store all maneuvers in a Queue
+                _maneuvers.Clear();
+                foreach (RouteLeg leg in _route.Legs)
+                {
+                    foreach (RouteManeuver man in leg.Maneuvers)
+                    {
+                        _maneuvers.Enqueue(man);
+                    }
+                }
+
+                Debug.WriteLine("ShoeModel: Route updated");
             }
         }
 
@@ -112,13 +129,10 @@ namespace App
 
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
         {
-            if (App.GeoLoc != sender || !App.RunningInBackground) return;
+            if (App.GeoLoc != sender) return;
             var coord = args.Position.Coordinate.ToGeoCoordinate();
             // Implement logic that finds out if we are on course, or should turn
 
-            // DEBUG toast notification
-            ShowToast("Loc change @" + DateTime.Now.ToShortTimeString() + " to " +
-                      coord.Longitude.ToString("0.0000") + ", " + coord.Latitude.ToString("0.0000"));
             // We are in the UI
             Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
 
@@ -127,16 +141,56 @@ namespace App
 
         private void CalculateNavigationInstruction(GeoCoordinate coord)
         {
-            if (_routeGeometry != null) return;
-            Debug.WriteLine("ShoeModel: RouteGeometry not set");
+            if (_maneuvers.Count <= 0)
+            {
+                Debug.WriteLine("ShoeModel: RouteGeometry not set");
+                return;
+            }
 
             // Calculate instruction to send to shoe
+            RouteManeuver man = _maneuvers.First<RouteManeuver>();
+            double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
+            if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
+            {
+                InstructShoes(man);
+                if (dist < 5)   // Remove this maneuver, lets get the nex one
+                {
+                    _maneuvers.Dequeue();
+                }
+            }
+
+            App.ViewModel.HeadingLocation = man.StartGeoCoordinate;
+
+            // Log
+            string s = "Dist: " + dist + ", direction = " + man.InstructionKind; 
+            if (!App.RunningInBackground)
+            {
+                App.Dispatch(() =>
+                {
+                    App.ViewModel.Log = s;
+                });
+            }
+        }
+
+        private void InstructShoes(RouteManeuver maneuver)
+        {
+            ShowToast("Now turn " + maneuver.InstructionKind);
         }
 
         private static void ShowToast(string s)
         {
-            var toast = new ShellToast {Content = s, Title = "Shoe"};
-            toast.Show();
+            if (App.RunningInBackground)
+            {
+                var toast = new ShellToast { Content = s, Title = "Shoe" };
+                toast.Show();
+            }
+            else
+            {
+                App.Dispatch(() =>
+                {
+                    App.ViewModel.Log = s;
+                });
+            }
         }
     }
 }

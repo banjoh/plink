@@ -27,10 +27,17 @@ namespace App.ViewModels
         public ObservableCollection<ItemViewModel> Items { get; private set; }
 
         private GeoCoordinate _myLoc = new GeoCoordinate(0, 0);
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding
-        /// </summary>
-        /// <returns></returns>
+        private GeoCoordinate _headingLoc = new GeoCoordinate(0, 0);
+        private int _placesNotGeoCoded = 0;
+
+        public bool DoneGeoCoding
+        {
+            get
+            {
+                return _placesNotGeoCoded <= 0;
+            }
+        }
+
         public GeoCoordinate MyLocation
         {
             get
@@ -43,6 +50,22 @@ namespace App.ViewModels
                 {
                     _myLoc = value == null ? new GeoCoordinate(0,0) : value;
                     NotifyPropertyChanged("MyLocation");
+                }
+            }
+        }
+
+        public GeoCoordinate HeadingLocation
+        {
+            get
+            {
+                return _headingLoc;
+            }
+            set
+            {
+                if (value != _headingLoc)
+                {
+                    _headingLoc = value == null ? new GeoCoordinate(0, 0) : value;
+                    NotifyPropertyChanged("HeadingLocation");
                 }
             }
         }
@@ -84,7 +107,7 @@ namespace App.ViewModels
             set
             {
                 logs.Enqueue(value);
-                if (logs.Count >= 4)
+                if (logs.Count >= 8)
                 {
                     logs.Dequeue();
                 }
@@ -139,6 +162,8 @@ namespace App.ViewModels
             places.Add("Keilaranta 17, 02150");
             places.Add("Teknikvägen 1, 02150");
 
+            _placesNotGeoCoded = places.Count;
+            
             foreach (string p in places)
             {
                 GeocodeQuery query = new GeocodeQuery();
@@ -149,9 +174,7 @@ namespace App.ViewModels
                 query.QueryAsync();
             }
 
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime three", LineTwo = "Habitant inceptos interdum lobortis", LineThree = "Habitant inceptos interdum lobortis nascetur pharetra placerat pulvinar sagittis senectus sociosqu suscipit torquent" });
-            this.Items.Add(new ItemViewModel() { LineOne = "runtime four", LineTwo = "Nascetur pharetra placerat pulvinar", LineThree = "Ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus habitant inceptos" });
+            //this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
             
             Debug.WriteLine("Data loaded");
             this.IsDataLoaded = true;
@@ -174,7 +197,7 @@ namespace App.ViewModels
                 App.Dispatch(() =>
                 {
                     MyLocation = args.Position.Coordinate.ToGeoCoordinate();
-                    Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
+                    //Log = "Loc change @" + DateTime.Now.ToShortTimeString() + " to " + args.Position.Coordinate.ToGeoCoordinate();
                 });                
                 Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
             }
@@ -182,6 +205,7 @@ namespace App.ViewModels
 
         void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
         {
+            _placesNotGeoCoded--;
             if (e.Result.Count > 0)
             {
                 MapLocation loc = e.Result[0];

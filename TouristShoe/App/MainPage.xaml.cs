@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Navigation;
@@ -20,6 +21,7 @@ namespace App
     {
         private readonly MapLayer _myCurrentLocationLayer = new MapLayer();
         private readonly MapLayer _placesLayer = new MapLayer();
+        private readonly MapLayer _headingLayer = new MapLayer();
         private MapRoute _mapRoute;
         
         // Constructor
@@ -48,6 +50,8 @@ namespace App
                 AddPlaceToMap(it.Location.GeoCoordinate);
             }
 
+            if (!App.ViewModel.DoneGeoCoding) return;
+
             // Update the route on map
             var coords = new List<GeoCoordinate> {App.ViewModel.MyLocation};
             foreach (var it in App.ViewModel.Items)
@@ -62,12 +66,13 @@ namespace App
         private void UpdateMyCurrectLocation()
         {
             // Create my location marker
-            var locCircle = new Ellipse();
-            locCircle.Fill = new SolidColorBrush(Colors.Green);
-            locCircle.Height = 20;
-            locCircle.Width = 20;
-            locCircle.Opacity = 50;
-
+            var locCircle = new Ellipse 
+            {
+                Fill = new SolidColorBrush(Colors.Green),
+                Height = 10,
+                Width = 10
+            };
+            
             var overlay = new MapOverlay
             {
                 Content = locCircle,
@@ -88,12 +93,36 @@ namespace App
             {
                 UpdateMyCurrectLocation();
             }
+
+            if (e.PropertyName == "HeadingLocation")
+            {
+                AddHeadingLocToMap(App.ViewModel.HeadingLocation);
+            }
+        }
+
+        private void AddHeadingLocToMap(GeoCoordinate coord)
+        {
+            // Create my location marker
+            var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Brown), Height = 10, Width = 10 };
+
+            var overlay = new MapOverlay
+            {
+                Content = locCircle,
+                GeoCoordinate = coord,
+                PositionOrigin = new Point(0, 0)
+            };
+
+            _headingLayer.Clear();
+            _headingLayer.Add(overlay);
+
+            // TODO: Use rectangular area
+            MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
         private void AddPlaceToMap(GeoCoordinate coord)
         {
             // Create my location marker
-            var locCircle = new Ellipse {Fill = new SolidColorBrush(Colors.Red), Height = 20, Width = 20, Opacity = 50};
+            var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Red), Height = 10, Width = 10 };
 
             var overlay = new MapOverlay
             {
@@ -108,16 +137,16 @@ namespace App
             MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
-        private void UpdateRoute(IReadOnlyCollection<GeoCoordinate> route)
+        private void UpdateRoute(IReadOnlyCollection<GeoCoordinate> places)
         {
-            if (route.Count < 2) return;
+            if (places.Count < 2) return;
             
             // Get the route for the new set
             var routeQuery = new RouteQuery
             {
                 TravelMode = TravelMode.Walking,
                 RouteOptimization = RouteOptimization.MinimizeDistance,
-                Waypoints = route
+                Waypoints = places
             };
             routeQuery.QueryCompleted += routeQuery_QueryCompleted;
             routeQuery.QueryAsync();
@@ -138,6 +167,32 @@ namespace App
             App.ViewModel.MyRoute = route;
             _mapRoute = new MapRoute(route);
             MapControl.AddRoute(_mapRoute);
+
+            //DrawRouteCircles(route);
+        }
+
+        void DrawRouteCircles(Route r)
+        {
+            foreach (RouteLeg leg in r.Legs)
+            {
+                foreach (RouteManeuver man in leg.Maneuvers)
+                {
+                    GeoCoordinate coord = man.StartGeoCoordinate;
+                    var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Brown), Height = 50, Width = 50 };
+
+                    var overlay = new MapOverlay
+                    {
+                        Content = locCircle,
+                        GeoCoordinate = coord,
+                        PositionOrigin = new Point(0, 0)
+                    };
+
+                    _placesLayer.Add(overlay);
+                }
+            }
+
+            // TODO: Use rectangular area
+            MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
         void PrintGeometry(IRoutePath r)
