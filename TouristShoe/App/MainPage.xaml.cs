@@ -171,21 +171,6 @@ namespace App
             MapControl.AddRoute(_mapRoute);
         }
 
-        void PrintGeometry(IRoutePath r)
-        {
-            var gCol = r.Geometry;
-
-            GeoCoordinate gg = null;
-            foreach (var g in gCol)
-            {
-                if (gg != null)
-                {
-                    Debug.WriteLine("Dist = {0}, Direction = {1}", gg.GetDistanceTo(g), gg.Course);
-                }
-                gg = g;
-            }
-        }
-
         // Load data for the ViewModel Items
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -214,25 +199,23 @@ namespace App
         private void Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
             Button b = sender as Button;
-            if (b != null)
-            {
-                switch (b.Content as string)
-                { 
-                    case "Continue Straight":
-                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.GoStraight);
-                        break;
-                    case "Go Left":
-                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnLeft);
-                        break;
-                    case "Go Right":
-                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnRight);
-                        break;
-                    case "Turn Back":
-                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.UTurnLeft);
-                        break;
-                    default:
-                        break;
-                }
+            if (b == null) return;
+            switch (b.Content as string)
+            { 
+                case "Continue Straight":
+                    App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.GoStraight);
+                    break;
+                case "Go Left":
+                    App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnLeft);
+                    break;
+                case "Go Right":
+                    App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnRight);
+                    break;
+                case "Turn Back":
+                    App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.UTurnLeft);
+                    break;
+                default:
+                    break;
             }
         }
     }

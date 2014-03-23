@@ -2,8 +2,9 @@
 // ones defined here http://msdn.microsoft.com/en-us/library/windowsphone/develop/jj662941%28v=vs.105%29.aspx
 
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows;
 using Microsoft.Phone.Shell;
 using System.Diagnostics;
 using System.Linq;
@@ -16,6 +17,7 @@ using Microsoft.Phone.Maps.Services;
 // Bluetooth
 using Windows.Networking.Proximity;
 using Windows.Networking.Sockets;
+using Microsoft.Phone.Tasks;
 
 namespace App
 {
@@ -26,16 +28,18 @@ namespace App
             BothConnected,
             LeftConnected,
             RightConnected,
-            Disconnected
+            Disconnected,
+            BluetoothOff
         }
 
         // Route geometry needed to generate directional commands sent to the
         // shoes.
-        private Route _route = null;
-        private Queue<RouteManeuver> _maneuvers = new Queue<RouteManeuver>();
+        private Route _route;
+        private readonly Queue<RouteManeuver> _maneuvers = new Queue<RouteManeuver>();
 
         // Socket used to communicate with the shoes through bluetooth
-		private readonly StreamSocket _socket = new StreamSocket();
+		private StreamSocket _leftStreamSocket;
+        private StreamSocket _rightStreamSocket;
 
         public ShoeModel()
         {
@@ -67,49 +71,96 @@ namespace App
 
         public async void ConnectToShoes()
         {
-            string shoe = "RN42-E0D4";
-
-            // TODO: Handle errors when bluetooth is OFF
-            // Note: You can only browse and connect to paired devices!
-            // Configure PeerFinder to search for all paired devices.
-            PeerFinder.AlternateIdentities["Bluetooth:Paired"] = "";
-            var pairedDevices = await PeerFinder.FindAllPeersAsync();
-
-            PeerInformation selectedDevice = null;
-
-            foreach (PeerInformation p in pairedDevices)
+            if (_leftStreamSocket == null)
             {
-                App.Log(p.DisplayName);
-                if (p.DisplayName == shoe)
+                _leftStreamSocket = await ConnectToShoe("RN42-E0D4");
+                if (_leftStreamSocket != null)
                 {
-                    selectedDevice = p;
-                    continue;
+                    App.ViewModel.ShoeConnectionStatus = Status.BothConnected.ToString();
+                    App.Log("Shoes Connected!!!");
                 }
-            }
-            if (selectedDevice == null)
-            {
-                App.Log("Shoe " + shoe + " NOT FOUND");
-                return;
-            }
+            }   
+            //_rightStreamSocket = await ConnectToShoe("RN42-E0D4");
+        }
 
-            // Attempt a connection
-
-            // Make sure ID_CAP_NETWORKING is enabled in your WMAppManifest.xml, or the next 
-            // line will throw an Access Denied exception.
-            // In this example, the second parameter of the call to ConnectAsync() is the RFCOMM port number, and can range 
-            // in value from 1 to 30.
+        private async Task<StreamSocket> ConnectToShoe(string shoe)
+        {
+            StreamSocket s = null;
             try
             {
-                await _socket.ConnectAsync(selectedDevice.HostName, "1");
+                // TODO: Handle errors when bluetooth is OFF
+                // Note: You can only browse and connect to paired devices!
+                // Configure PeerFinder to search for all paired devices.
+                PeerFinder.AlternateIdentities["Bluetooth:Paired"] = "";
+                var pairedDevices = await PeerFinder.FindAllPeersAsync();
+
+                PeerInformation selectedDevice = null;
+
+                foreach (PeerInformation p in pairedDevices)
+                {
+                    App.Log(p.DisplayName);
+                    if (p.DisplayName == shoe)
+                    {
+                        selectedDevice = p;
+                        break;
+                    }
+                }
+                if (selectedDevice == null)
+                {
+                    App.Log("Shoe " + shoe + " NOT FOUND");
+                    return null;
+                }
+
+                // Attempt a connection
+
+                // Make sure ID_CAP_NETWORKING is enabled in your WMAppManifest.xml, or the next 
+                // line will throw an Access Denied exception.
+                // In this example, the second parameter of the call to ConnectAsync() is the RFCOMM port number, and can range 
+                // in value from 1 to 30.
+            
+                s = new StreamSocket();
+                await s.ConnectAsync(selectedDevice.HostName, "1");
             }
             catch (Exception ex)
             {
+                if ((uint)ex.HResult == 0x8007048F)
+                {
+                    var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?", "Bluetooth Off", MessageBoxButton.OKCancel);
+                    if (result == MessageBoxResult.OK)
+                    {
+                        ConnectionSettingsTask connectionSettingsTask = new ConnectionSettingsTask
+                        {
+                            ConnectionSettingsType = ConnectionSettingsType.Bluetooth
+                        };
+                        connectionSettingsTask.Show(); 
+                    }
+                }
+                else if ((uint)ex.HResult == 0x8007271D)
+                {
+                    //0x80070005 - previous error code that may be wrong?
+                    MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
+                    s = null;
+                }
+                else if ((uint)ex.HResult == 0x80072740)
+                {
+                    MessageBox.Show("The Bluetooth port is already in use.");
+                    s = null;
+                }
+                else if ((uint)ex.HResult == 0x8007274C)
+                {
+                    MessageBox.Show("Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
+                    s = null;
+                }
+                else
+                {
+                    MessageBox.Show(ex.Message);
+                    s = null;
+                }
+                
                 App.Log(ex.Message);
-                return;
             }
 
-            App.ViewModel.ShoeConnectionStatus = Status.BothConnected.ToString();
-            App.Log("Shoes Connected!!!");
+            return s;
         }
 		
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
@@ -163,7 +214,7 @@ namespace App
         {
             ShowToast("Now turn " + maneuverKind);
 
-            byte instruction = 0;
+            byte instruction;
             switch (maneuverKind)
             { 
                 case RouteManeuverInstructionKind.TurnLeft:
@@ -180,17 +231,16 @@ namespace App
                     instruction = 4;
                     break;
                 default:
-                    break;
+                    return;
             }
 
             // TODO: Send message to shoe
             App.Log("Turn " + instruction);
-            return;
 
             // Create the data writer object backed by the in-memory stream.
             try
             {
-                using (var dataWriter = new Windows.Storage.Streams.DataWriter(_socket.OutputStream))
+                using (var dataWriter = new Windows.Storage.Streams.DataWriter(_leftStreamSocket.OutputStream))
                 {
                     // Parse the input stream and write each element separately.
                     dataWriter.WriteByte(instruction);

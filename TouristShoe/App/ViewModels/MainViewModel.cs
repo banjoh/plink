@@ -113,7 +113,7 @@ namespace App.ViewModels
             }
         }
 
-        private Queue<string> logs = new Queue<string>();
+        private readonly Queue<string> _logs = new Queue<string>();
         /// <summary>
         /// Sample ViewModel property; this property is used in the view to display its value using a Binding
         /// </summary>
@@ -123,7 +123,7 @@ namespace App.ViewModels
             get
             {
                 var b = new StringBuilder();
-                foreach (string s in logs)
+                foreach (string s in _logs)
                 {
                     b.AppendLine(s);
                 }
@@ -132,10 +132,10 @@ namespace App.ViewModels
             }
             set
             {
-                logs.Enqueue(value);
-                if (logs.Count >= 8)
+                _logs.Enqueue(value);
+                if (_logs.Count >= 8)
                 {
-                    logs.Dequeue();
+                    _logs.Dequeue();
                 }
                 NotifyPropertyChanged("Log");
             }

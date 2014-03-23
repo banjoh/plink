@@ -16,11 +16,9 @@
 
     <phone:PhoneApplicationPage.Resources>
         <ImageBrush ImageSource="Resources/box_rounded_green.png" x:Key="ListBackground"/>
-
         <Style x:Key="CustomPivotHeaders" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource PrimaryColorBrush}"/>
         </Style>
-        
     </phone:PhoneApplicationPage.Resources>
 
     <!--LayoutRoot is the root grid where all page content is placed-->
@@ -102,7 +100,7 @@
                 <TextBlock Text="My Location: " Grid.Column="0" Grid.Row="0" Margin="10"></TextBlock>
                 <TextBlock Text="{Binding MyLocation}" Grid.Column="1" Grid.Row="0" Margin="10"></TextBlock>
             </Grid>
-            <TextBlock Text="{Binding Log}" Grid.Row="1" Margin="10"/>
+            <TextBlock Text="{Binding Log}" Grid.Row="1" Margin="10" TextWrapping="Wrap"/>
         </Grid>
 
         <!--Uncomment to see an alignment grid to help ensure your controls are
