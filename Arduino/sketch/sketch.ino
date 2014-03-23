@@ -22,9 +22,9 @@ void loop() {
         Serial.println(incomingByte, DEC);
         Uart.print("UART received:");
         Uart.println(incomingByte, DEC);
-        analogWrite(vib, 100);
+        analogWrite(vib, 255);
         //digitalWrite(vib, HIGH);
-        delay(1000);
+        delay(3000);
         analogWrite(vib, 0);
         //digitalWrite(vib, LOW);
     }

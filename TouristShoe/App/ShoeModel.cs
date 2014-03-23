@@ -21,6 +21,14 @@ namespace App
 {
     public class ShoeModel
     {
+        public enum Status
+        { 
+            BothConnected,
+            LeftConnected,
+            RightConnected,
+            Disconnected
+        }
+
         // Route geometry needed to generate directional commands sent to the
         // shoes.
         private Route _route = null;
@@ -59,41 +67,49 @@ namespace App
 
         public async void ConnectToShoes()
         {
+            string shoe = "RN42-E0D4";
+
+            // TODO: Handle errors when bluetooth is OFF
             // Note: You can only browse and connect to paired devices!
             // Configure PeerFinder to search for all paired devices.
             PeerFinder.AlternateIdentities["Bluetooth:Paired"] = "";
             var pairedDevices = await PeerFinder.FindAllPeersAsync();
 
-            if (pairedDevices.Count == 0)
-            {
-                Debug.WriteLine("No paired devices were found.");
-            }
-            else
-            {
-                // Select a paired device. In this example, just pick the first one.
-                PeerInformation selectedDevice = pairedDevices[0];
+            PeerInformation selectedDevice = null;
 
-                foreach(PeerInformation p in pairedDevices)
+            foreach (PeerInformation p in pairedDevices)
+            {
+                App.Log(p.DisplayName);
+                if (p.DisplayName == shoe)
                 {
-                    Debug.WriteLine(p.DisplayName);
-                } 
-                
-                // Attempt a connection
-              
-                // Make sure ID_CAP_NETWORKING is enabled in your WMAppManifest.xml, or the next 
-                // line will throw an Access Denied exception.
-                // In this example, the second parameter of the call to ConnectAsync() is the RFCOMM port number, and can range 
-                // in value from 1 to 30.
-                try
-                {
-                    await _socket.ConnectAsync(selectedDevice.HostName, "1");
+                    selectedDevice = p;
+                    continue;
                 }
-                catch(Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                }
-                Debug.WriteLine("Connected!!!");
             }
+            if (selectedDevice == null)
+            {
+                App.Log("Shoe " + shoe + " NOT FOUND");
+                return;
+            }
+
+            // Attempt a connection
+
+            // Make sure ID_CAP_NETWORKING is enabled in your WMAppManifest.xml, or the next 
+            // line will throw an Access Denied exception.
+            // In this example, the second parameter of the call to ConnectAsync() is the RFCOMM port number, and can range 
+            // in value from 1 to 30.
+            try
+            {
+                await _socket.ConnectAsync(selectedDevice.HostName, "1");
+            }
+            catch (Exception ex)
+            {
+                App.Log(ex.Message);
+                return;
+            }
+
+            App.ViewModel.ShoeConnectionStatus = Status.BothConnected.ToString();
+            App.Log("Shoes Connected!!!");
         }
 		
         void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
@@ -140,19 +156,50 @@ namespace App
         {
             ShowToast("Now turn " + maneuver.InstructionKind);
 
+            InstructShoes(maneuver.InstructionKind);
+        }
+
+        public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
+        {
+            ShowToast("Now turn " + maneuverKind);
+
+            byte instruction = 0;
+            switch (maneuverKind)
+            { 
+                case RouteManeuverInstructionKind.TurnLeft:
+                    instruction = 1;
+                    break;
+                case RouteManeuverInstructionKind.TurnRight:
+                    instruction = 2;
+                    break;
+                case RouteManeuverInstructionKind.GoStraight:
+                    instruction = 3;
+                    break;
+                case RouteManeuverInstructionKind.UTurnLeft:
+                case RouteManeuverInstructionKind.UTurnRight:
+                    instruction = 4;
+                    break;
+                default:
+                    break;
+            }
+
+            // TODO: Send message to shoe
+            App.Log("Turn " + instruction);
+            return;
+
             // Create the data writer object backed by the in-memory stream.
-            /*try
+            try
             {
                 using (var dataWriter = new Windows.Storage.Streams.DataWriter(_socket.OutputStream))
                 {
                     // Parse the input stream and write each element separately.
-                    dataWriter.WriteByte(1);
+                    dataWriter.WriteByte(instruction);
 
                     // Send the contents of the writer to the backing stream.
                     Debug.WriteLine(Convert.ToString(await dataWriter.StoreAsync()));
 
                     // For the in-memory stream implementation we are using, the flushAsync call 
-                    // is superfluous,but other types of streams may require it.
+                    // is superfluous, but other types of streams may require it.
                     Debug.WriteLine(Convert.ToString(await dataWriter.FlushAsync()));
 
                     // In order to prolong the lifetime of the stream, detach it from the 
@@ -166,7 +213,7 @@ namespace App
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-            }*/
+            }
         }
 
         private static void ShowToast(string s)

@@ -66,6 +66,38 @@ namespace App.ViewModels
             }
         }
 
+        private string _shoeLogo;
+        public string ShoeConnectionStatus
+        {
+            get
+            {
+                return _shoeLogo;
+            }
+            set
+            {
+                ShoeModel.Status s;
+                if (Enum.TryParse<ShoeModel.Status>(value, out s))
+                {
+                    switch (s)
+                    {
+                        case ShoeModel.Status.BothConnected:
+                            _shoeLogo = "Resources\\shoes_connected.png";
+                            break;
+                        case ShoeModel.Status.LeftConnected:
+                            _shoeLogo = "Resources\\shoes_left_red.png";
+                            break;
+                        case ShoeModel.Status.RightConnected:
+                            _shoeLogo = "Resources\\shoes_right_red.png";
+                            break;
+                        default:
+                            _shoeLogo = "Resources\\shoes_notconnected.png";
+                            break;
+                    }
+                    NotifyPropertyChanged("ShoeConnectionStatus");
+                }
+            }
+        }
+
         private Route _myRoute = default(Route);
         public Route MyRoute
         {
@@ -133,6 +165,7 @@ namespace App.ViewModels
         {
             Debug.WriteLine("Loading data");
             App.IndicatingProgress = true;
+            ShoeConnectionStatus = ShoeModel.Status.Disconnected.ToString();
             try
             {
                 // Get the current position
@@ -185,6 +218,7 @@ namespace App.ViewModels
             this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
             
             Debug.WriteLine("Data loaded");
+            App.ShoeModel.ConnectToShoes();
             this.IsDataLoaded = true;
             App.IndicatingProgress = false;
         }

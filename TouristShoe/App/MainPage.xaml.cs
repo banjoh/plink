@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Device.Location;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -202,6 +203,37 @@ namespace App
         private void StackPanel_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
             NavigationService.Navigate(new Uri("/PlacesDetails.xaml", UriKind.Relative));
+        }
+
+        private void Image_Tap(object sender, System.Windows.Input.GestureEventArgs e)
+        {
+            App.Log("Tapped image");
+            App.ShoeModel.ConnectToShoes();
+        }
+
+        private void Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)
+        {
+            Button b = sender as Button;
+            if (b != null)
+            {
+                switch (b.Content as string)
+                { 
+                    case "Continue Straight":
+                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.GoStraight);
+                        break;
+                    case "Go Left":
+                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnLeft);
+                        break;
+                    case "Go Right":
+                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.TurnRight);
+                        break;
+                    case "Turn Back":
+                        App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.UTurnLeft);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 }
