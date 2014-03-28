@@ -48,7 +48,7 @@
             <!--Pivot item one-->
             <phone:PivotItem Header="Places">
                 <!--Double line list with text wrapping-->
-                <phone:LongListSelector Margin="0,-20,-15,0" ItemsSource="{Binding Items}">
+                <phone:LongListSelector Margin="0,-20,0,0" ItemsSource="{Binding Items}">
                     <phone:LongListSelector.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,0,0,17" Tap="StackPanel_Tap" Background="{StaticResource ListBackground}">
