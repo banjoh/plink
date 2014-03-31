@@ -18,7 +18,8 @@ namespace App.ViewModels
     {
         public MainViewModel()
         {
-            this.Items = new ObservableCollection<ItemViewModel>();
+            Items = new ObservableCollection<ItemViewModel>();
+            Loading = false;
         }
 
         /// <summary>
@@ -158,13 +159,24 @@ namespace App.ViewModels
             private set;
         }
 
+        private bool _loading;
+        public bool Loading
+        {
+            get { return _loading; }
+            set
+            {
+                _loading = value;
+                NotifyPropertyChanged("Loading");
+            }
+        }
+
         /// <summary>
         /// Creates and adds a few ItemViewModel objects into the Items collection.
         /// </summary>
         public async void LoadData()
         {
             Debug.WriteLine("Loading data");
-            App.IndicatingProgress = true;
+            Loading = true;
             ShoeConnectionStatus = ShoeModel.Status.Disconnected.ToString();
             try
             {
@@ -211,8 +223,8 @@ namespace App.ViewModels
             
             Debug.WriteLine("Data loaded");
             App.ShoeModel.ConnectToShoes();
-            this.IsDataLoaded = true;
-            App.IndicatingProgress = false;
+            IsDataLoaded = true;
+            Loading = false;
         }
 
         void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)

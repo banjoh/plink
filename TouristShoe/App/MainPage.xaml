@@ -25,13 +25,21 @@
     <Grid x:Name="LayoutRoot" Background="Transparent" Margin="0,25,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Shoe image -->
-        
-        <Image
+        <ProgressBar
             Grid.Row="0"
+            Name="Progress"
+            Visibility="{Binding Loading, Converter={StaticResource BooleanToVisibilityConverter}}"
+            IsIndeterminate="True"
+            Margin="0,-25,0,0"
+            Style="{StaticResource CustomIndeterminateProgressBar}"/>
+
+        <!-- Shoe image -->
+        <Image
+            Grid.Row="1"
             Source="{Binding ShoeConnectionStatus}"
             HorizontalAlignment="Center"
             Width="50"
@@ -39,7 +47,7 @@
             Tap="Image_Tap"/>
         
         <!--Pivot Control-->
-        <phone:Pivot Grid.Row="1" Margin="0,-10,0,0">
+        <phone:Pivot Grid.Row="2" Margin="0,-10,0,0">
             <phone:Pivot.HeaderTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}" Style="{StaticResource CustomPivotHeaders}"/>

@@ -17,6 +17,7 @@ using Microsoft.Phone.Maps.Services;
 // Bluetooth
 using Windows.Networking.Proximity;
 using Windows.Networking.Sockets;
+using Windows.Storage.Streams;
 using Microsoft.Phone.Tasks;
 
 namespace App
@@ -85,6 +86,7 @@ namespace App
 
         private async Task<StreamSocket> ConnectToShoe(string shoe)
         {
+            App.ViewModel.Loading = true;
             StreamSocket s = null;
             try
             {
@@ -117,38 +119,40 @@ namespace App
                 // line will throw an Access Denied exception.
                 // In this example, the second parameter of the call to ConnectAsync() is the RFCOMM port number, and can range 
                 // in value from 1 to 30.
-            
+
                 s = new StreamSocket();
                 await s.ConnectAsync(selectedDevice.HostName, "1");
             }
             catch (Exception ex)
             {
-                if ((uint)ex.HResult == 0x8007048F)
+                if ((uint) ex.HResult == 0x8007048F)
                 {
-                    var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?", "Bluetooth Off", MessageBoxButton.OKCancel);
+                    var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?",
+                        "Bluetooth Off", MessageBoxButton.OKCancel);
                     if (result == MessageBoxResult.OK)
                     {
                         ConnectionSettingsTask connectionSettingsTask = new ConnectionSettingsTask
                         {
                             ConnectionSettingsType = ConnectionSettingsType.Bluetooth
                         };
-                        connectionSettingsTask.Show(); 
+                        connectionSettingsTask.Show();
                     }
                 }
-                else if ((uint)ex.HResult == 0x8007271D)
+                else if ((uint) ex.HResult == 0x8007271D)
                 {
                     //0x80070005 - previous error code that may be wrong?
                     MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
                     s = null;
                 }
-                else if ((uint)ex.HResult == 0x80072740)
+                else if ((uint) ex.HResult == 0x80072740)
                 {
                     MessageBox.Show("The Bluetooth port is already in use.");
                     s = null;
                 }
-                else if ((uint)ex.HResult == 0x8007274C)
+                else if ((uint) ex.HResult == 0x8007274C)
                 {
-                    MessageBox.Show("Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
+                    MessageBox.Show(
+                        "Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
                     s = null;
                 }
                 else
@@ -156,8 +160,12 @@ namespace App
                     MessageBox.Show(ex.Message);
                     s = null;
                 }
-                
+
                 App.Log(ex.Message);
+            }
+            finally
+            {
+                App.ViewModel.Loading = false;
             }
 
             return s;
@@ -210,25 +218,31 @@ namespace App
             InstructShoes(maneuver.InstructionKind);
         }
 
-        public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
+        public void InstructShoes(RouteManeuverInstructionKind maneuverKind)
         {
             ShowToast("Now turn " + maneuverKind);
 
+            List<Task> tasks = new List<Task>();
             byte instruction;
             switch (maneuverKind)
             { 
                 case RouteManeuverInstructionKind.TurnLeft:
                     instruction = 1;
+                    tasks.Add(Task.Run(() => SendMessage(_leftStreamSocket, instruction)));
                     break;
                 case RouteManeuverInstructionKind.TurnRight:
                     instruction = 2;
+                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
                     break;
                 case RouteManeuverInstructionKind.GoStraight:
                     instruction = 3;
+                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftStreamSocket, instruction)));
                     break;
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
                     instruction = 4;
+                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
                     break;
                 default:
                     return;
@@ -237,19 +251,24 @@ namespace App
             // TODO: Send message to shoe
             App.Log("Turn " + instruction);
 
+            Task.WaitAll(tasks.ToArray());
+        }
+
+        private async void SendMessage(StreamSocket s, byte msg)
+        {
             // Create the data writer object backed by the in-memory stream.
             try
             {
-                using (var dataWriter = new Windows.Storage.Streams.DataWriter(_leftStreamSocket.OutputStream))
+                using (var dataWriter = new DataWriter(s.OutputStream))
                 {
                     // Parse the input stream and write each element separately.
-                    dataWriter.WriteByte(instruction);
+                    dataWriter.WriteByte(msg);
 
                     // Send the contents of the writer to the backing stream.
                     Debug.WriteLine(Convert.ToString(await dataWriter.StoreAsync()));
 
                     // For the in-memory stream implementation we are using, the flushAsync call 
-                    // is superfluous, but other types of streams may require it.
+                    // is unnecessary, but other types of streams may require it.
                     Debug.WriteLine(Convert.ToString(await dataWriter.FlushAsync()));
 
                     // In order to prolong the lifetime of the stream, detach it from the 

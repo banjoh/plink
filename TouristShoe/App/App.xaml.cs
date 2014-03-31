@@ -43,26 +43,6 @@ namespace App
         }
 
         public static ShoeModel ShoeModel { get; private set; }
-        public static bool IndicatingProgress
-        {
-            get
-            {
-                if (SystemTray.ProgressIndicator == null)
-                {
-                    SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
-                }
-                return SystemTray.ProgressIndicator.IsVisible;
-            }
-
-            set
-            {
-                if (SystemTray.ProgressIndicator == null)
-                {
-                    SystemTray.ProgressIndicator = new ProgressIndicator {Text = "Loading...", IsIndeterminate = true};
-                }
-                SystemTray.ProgressIndicator.IsVisible = value;
-            }
-        }
 
         public static void Dispatch(Action a)
         {
