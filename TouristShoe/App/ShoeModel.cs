@@ -73,6 +73,9 @@ namespace App
 
         public async Task ConnectToShoes()
         {
+            // Ensure bluetooth is connected
+            if (!await EnsureBluethoothConnected()) return;
+
             Debug.WriteLine("Connecting to shoe for real");
             const string left = "RN42-E0D4";
             const string right = "";
@@ -107,12 +110,57 @@ namespace App
             }
         }
 
+        private static async Task<bool> EnsureBluethoothConnected()
+        {
+            try
+            {
+                PeerFinder.AlternateIdentities["Bluetooth:Paired"] = "";
+                var pairedDevices = await PeerFinder.FindAllPeersAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Execute code in UI thread
+                App.Dispatch(() =>
+                {
+                    if ((uint)ex.HResult == 0x8007048F)
+                    {
+                        var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?",
+                            "Bluetooth Off", MessageBoxButton.OKCancel);
+                        if (result == MessageBoxResult.OK)
+                        {
+                            var connectionSettingsTask = new ConnectionSettingsTask
+                            {
+                                ConnectionSettingsType = ConnectionSettingsType.Bluetooth
+                            };
+                            connectionSettingsTask.Show();
+                        }
+                    }
+                    else if ((uint)ex.HResult == 0x8007271D)
+                    {
+                        //0x80070005 - previous error code that may be wrong?
+                        MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
+                    }
+                    else if ((uint)ex.HResult == 0x80072740)
+                    {
+                        MessageBox.Show("The Bluetooth port is already in use.");
+                    }
+                    else if ((uint)ex.HResult == 0x8007274C)
+                    {
+                        MessageBox.Show(
+                            "Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
+                    }
+                    else MessageBox.Show(ex.Message);
+                });
+                return false;
+            }
+        }
+
         private static async Task<StreamSocket> ConnectToShoe(string shoe)
         {
             StreamSocket s = null;
             try
             {
-                // TODO: Handle errors when bluetooth is OFF
                 // Note: You can only browse and connect to paired devices!
                 // Configure PeerFinder to search for all paired devices.
                 PeerFinder.AlternateIdentities["Bluetooth:Paired"] = "";
@@ -163,40 +211,6 @@ namespace App
             catch (Exception ex)
             {
                 s = null;
-
-                // Execute code in UI thread
-                App.Dispatch(() =>
-                {
-                    if ((uint)ex.HResult == 0x8007048F)
-                    {
-                        var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?",
-                            "Bluetooth Off", MessageBoxButton.OKCancel);
-                        if (result == MessageBoxResult.OK)
-                        {
-                            var connectionSettingsTask = new ConnectionSettingsTask
-                            {
-                                ConnectionSettingsType = ConnectionSettingsType.Bluetooth
-                            };
-                            connectionSettingsTask.Show();
-                        }
-                    }
-                    else if ((uint)ex.HResult == 0x8007271D)
-                    {
-                        //0x80070005 - previous error code that may be wrong?
-                        MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
-                    }
-                    else if ((uint)ex.HResult == 0x80072740)
-                    {
-                        MessageBox.Show("The Bluetooth port is already in use.");
-                    }
-                    else if ((uint) ex.HResult == 0x8007274C)
-                    {
-                        MessageBox.Show(
-                            "Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
-                    }
-                    else MessageBox.Show(ex.Message);
-                });
-                
                 App.Log(ex.Message);
             }
 

@@ -21,26 +21,6 @@
     <Grid x:Name="LayoutRoot" Background="Transparent">
         <!--Pivot Control-->
         <phone:Pivot Title="Helsinki Cathedral" Name="Pivot">
-            <!--<phone:Pivot.HeaderTemplate>
-                <DataTemplate>
-                    <StackPanel Height="0" Width="0">
-                        <TextBlock Text="" />
-                    </StackPanel>
-                </DataTemplate>
-            </phone:Pivot.HeaderTemplate>
-            <phone:Pivot.ItemTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Image Grid.Row="0" Source="Assets\white_church.jpg" Width="400" Height="400"/>
-                        <TextBlock Grid.Row="1" Text="Some text"/>
-                    </Grid>
-                </DataTemplate>
-            </phone:Pivot.ItemTemplate>-->
-            <!--Pivot item two-->
             <phone:PivotItem>
                 <Grid Margin="10,-50,10,0">
                     <Grid.RowDefinitions>
