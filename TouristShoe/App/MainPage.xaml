@@ -8,11 +8,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:maps="clr-namespace:Microsoft.Phone.Maps.Controls;assembly=Microsoft.Phone.Maps"
     mc:Ignorable="d"
+    xmlns:toolkit="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone.Controls.Toolkit"
     FontFamily="{StaticResource PhoneFontFamilyNormal}"
     FontSize="{StaticResource PhoneFontSizeNormal}"
     Foreground="{StaticResource PhoneForegroundBrush}"
     SupportedOrientations="Portrait"  Orientation="Portrait"
-    shell:SystemTray.IsVisible="False">
+    shell:SystemTray.IsVisible="False"
+    toolkit:TiltEffect.IsTiltEnabled="True">
 
     <phone:PhoneApplicationPage.Resources>
         <ImageBrush ImageSource="Resources/box_rounded_green.png" x:Key="ListBackground"/>
@@ -34,17 +36,17 @@
             Name="Progress"
             Visibility="{Binding Loading, Converter={StaticResource BooleanToVisibilityConverter}}"
             IsIndeterminate="True"
-            Margin="0,-25,0,0"
+            Margin="0,-30,0,0"
             Style="{StaticResource CustomIndeterminateProgressBar}"/>
 
         <!-- Shoe image -->
         <Image
             Grid.Row="1"
-            Source="{Binding ShoeConnectionStatus}"
+            Source="{Binding ShoeConnectionStatus, Converter={StaticResource ShoeStatusToResourceConverter}}"
             HorizontalAlignment="Center"
             Width="50"
             Height="50"
-            Tap="Image_Tap"/>
+            Tap="ShoeImage_OnTap"/>
         
         <!--Pivot Control-->
         <phone:Pivot Grid.Row="2" Margin="0,-10,0,0">
@@ -56,13 +58,31 @@
             <!--Pivot item one-->
             <phone:PivotItem Header="Places">
                 <!--Double line list with text wrapping-->
-                <phone:LongListSelector Margin="0,-20,0,0" ItemsSource="{Binding Items}">
+                <phone:LongListSelector x:Name="LLS" Margin="0,-20,0,0" ItemsSource="{Binding Items}" SelectionChanged="LongListSelector_OnSelectionChanged">
                     <phone:LongListSelector.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,0,0,17" Tap="StackPanel_Tap" Background="{StaticResource ListBackground}">
-                                <TextBlock Text="{Binding LineOne}" TextWrapping="Wrap" Margin="12,-6,12,0" Style="{StaticResource PhoneTextExtraLargeStyle}"/>
-                                <TextBlock Text="{Binding LineTwo}" TextWrapping="Wrap" Margin="12,0,12,6" Style="{StaticResource PhoneTextSubtleStyle}"/>
-                            </StackPanel>
+                        <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
+                            <Grid Background="{StaticResource ListBackground}" Margin="0,0,0,17">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- <Rectangle Grid.Column="0" Width="70" Height="70" Fill= "{StaticResource PhoneAccentBrush}"/> -->
+                                <Canvas Grid.Column="0" Width="80" Height="80" Tap="MapSymbol_OnTap">
+                                    <Image Canvas.Top="5" Canvas.Left="12" Width="70" Height="70" Source="{Binding ThumbNail}"/>
+                                </Canvas>
+                                <StackPanel Grid.Column="1" Margin="0,2,0,0" >
+                                    <TextBlock Text="{Binding LineOne}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextLargeStyle}"/>
+                                    <TextBlock Text="{Binding LineTwo}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextSmallStyle}"/>
+                                </StackPanel>
+                                <Canvas x:Name="PlusMinusSign" Grid.Column="2" Width="50" Height="50" Tap="PlusMinusSign_OnTap">
+                                    <Image Canvas.Top="4" Width="40" Height="40" Source="{Binding VisitStatusProperty, Converter={StaticResource VisitStatusToResourceConverter}}"/>
+                                </Canvas>
+                                <Canvas x:Name="MapSymbol" Grid.Column="3" Width="50" Height="50" Tap="MapSymbol_OnTap">
+                                    <Image Canvas.Top="4" Width="40" Height="40" Source="Resources\map_symbol_green.png"/>
+                                </Canvas>
+                            </Grid>
                         </DataTemplate>
                     </phone:LongListSelector.ItemTemplate>
                 </phone:LongListSelector>
@@ -91,7 +111,7 @@
               Margin="20,0,20,10"
               VerticalAlignment="Bottom"
               Background="#80000000"
-              Visibility="Visible">
+              Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="auto"/>

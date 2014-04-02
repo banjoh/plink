@@ -2,18 +2,19 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using App.ViewModels;
 
 namespace App.Utils
 {
     // Convert ShoeModel status values to strings pointing to Icon images
-    public class ShoeStatusToResourceConverter : IValueConverter
+    public class VisitStatusToResourceConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            ShoeModel.Status s;
+            ItemViewModel.VisitStatus s;
             try
             {
-                s = (ShoeModel.Status) value;
+                s = (ItemViewModel.VisitStatus) value;
             }
             catch (Exception)
             {
@@ -22,14 +23,10 @@ namespace App.Utils
 
             switch (s)
             {
-                case ShoeModel.Status.Connected:
-                    return "Resources\\shoes_connected.png";
-                case ShoeModel.Status.LeftConnected:
-                    return "Resources\\shoes_left_red.png";
-                case ShoeModel.Status.RightConnected:
-                    return "Resources\\shoes_right_red.png";
-                case ShoeModel.Status.Disconnected:
-                    return "Resources\\shoes_notconnected.png";
+                case ItemViewModel.VisitStatus.Yes:
+                    return "Resources\\minus_green.png";
+                case ItemViewModel.VisitStatus.No:
+                    return "Resources\\plus_green.png";
                 default:
                     return DependencyProperty.UnsetValue;
             }

@@ -5,15 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Device.Location;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Phone.Controls;
 using Microsoft.Phone.Maps.Controls;
 using Microsoft.Phone.Maps.Services;
 using System.Threading;
 using App.ViewModels;
+using GestureEventArgs = System.Windows.Input.GestureEventArgs;
 
 namespace App
 {
@@ -23,6 +26,9 @@ namespace App
         private readonly MapLayer _placesLayer = new MapLayer();
         private readonly MapLayer _headingLayer = new MapLayer();
         private MapRoute _mapRoute;
+        private bool _signTapped = false;
+        private bool _mapSymbolTapped = false;
+        private ItemViewModel _navItem = null;
         
         // Constructor
         public MainPage()
@@ -180,20 +186,28 @@ namespace App
             }
         }
 
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+
+            PlacesDetails placesDetails = e.Content as PlacesDetails;
+            if (placesDetails != null)
+            {
+               placesDetails.Item = _navItem;
+            }
+        }
+
         private void ApplicationBarMenuItem_Click(object sender, EventArgs e)
         {
             DebugBox.Visibility = DebugBox.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void StackPanel_Tap(object sender, System.Windows.Input.GestureEventArgs e)
-        {
-            NavigationService.Navigate(new Uri("/PlacesDetails.xaml", UriKind.Relative));
-        }
-
-        private void Image_Tap(object sender, System.Windows.Input.GestureEventArgs e)
+        private async void ShoeImage_OnTap(object sender, System.Windows.Input.GestureEventArgs e)
         {
             App.Log("Tapped image");
-            App.ShoeModel.ConnectToShoes();
+            App.ViewModel.Loading = true;
+            await App.ShoeModel.ConnectToShoes();
+            App.ViewModel.Loading = false;
         }
 
         private void Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)
@@ -217,6 +231,50 @@ namespace App
                 default:
                     break;
             }
+        }
+
+        private void MapSymbol_OnTap(object sender, GestureEventArgs e)
+        {
+            App.Log("MapSymbol tapped");
+            _mapSymbolTapped = true;
+        }
+
+        private void PlusMinusSign_OnTap(object sender, GestureEventArgs e)
+        {
+            App.Log("PlusMinusSign tapped");
+            _signTapped = true;
+        }
+
+        private void LongListSelector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            LongListSelector lls = sender as LongListSelector;
+            if (sender != LLS || lls == null) return;
+            App.Log("LongListSelector_OnSelectionChanged");
+                
+            
+            ItemViewModel item = lls.SelectedItem as ItemViewModel;
+            if (item == null) return;
+
+            if (_signTapped)
+            {
+                item.VisitStatusProperty = item.VisitStatusProperty == ItemViewModel.VisitStatus.Yes
+                    ? ItemViewModel.VisitStatus.No
+                    : ItemViewModel.VisitStatus.Yes;
+                _signTapped = false;
+            }
+            else if (_mapSymbolTapped)
+            {
+                // Navigate to the selected map location
+            }
+            else
+            {
+                _navItem = item;
+                // Navigate to the details page by default
+                NavigationService.Navigate(new Uri("/PlacesDetails.xaml", UriKind.Relative));
+            }
+
+            // A little hack to get the LLS to fire SelectionChange after clicking the same list item
+            lls.SelectedItem = null;
         }
     }
 }

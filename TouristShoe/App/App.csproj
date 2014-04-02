@@ -108,6 +108,7 @@
     </Compile>
     <Compile Include="Utils\BooleanToVisibilityConverter.cs" />
     <Compile Include="Utils\ShoeStatusToResourceConverter.cs" />
+    <Compile Include="Utils\VisitStatusToResourceConverter.cs" />
     <Compile Include="ViewModels\ItemViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
   </ItemGroup>
@@ -153,9 +154,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\white_church.jpg" />
+    <Content Include="Assets\white_church_thumb.jpg" />
     <Content Include="README_FIRST.txt" />
     <Content Include="Resources\box_rounded_green.png" />
     <Content Include="Resources\map_symbol_green.png" />
+    <Content Include="Resources\minus_green.png" />
     <Content Include="Resources\plus_green.png" />
     <Content Include="Resources\shoes_connected.png" />
     <Content Include="Resources\shoes_left_red.png" />

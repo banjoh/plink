@@ -6,11 +6,13 @@ namespace App.ViewModels
 {
     public class ItemViewModel : INotifyPropertyChanged
     {
+        public enum VisitStatus
+        {
+            Yes,
+            No
+        }
+
         private string _lineOne;
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding.
-        /// </summary>
-        /// <returns></returns>
         public string LineOne
         {
             get
@@ -26,10 +28,6 @@ namespace App.ViewModels
         }
 
         private string _lineTwo;
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding.
-        /// </summary>
-        /// <returns></returns>
         public string LineTwo
         {
             get
@@ -38,40 +36,28 @@ namespace App.ViewModels
             }
             set
             {
-                if (value != _lineTwo)
-                {
-                    _lineTwo = value;
-                    NotifyPropertyChanged("LineTwo");
-                }
+                if (value == _lineTwo) return;
+                _lineTwo = value;
+                NotifyPropertyChanged("LineTwo");
             }
         }
 
-        private string _lineThree;
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding.
-        /// </summary>
-        /// <returns></returns>
-        public string LineThree
+        private VisitStatus _visitStatusProperty;
+        public VisitStatus VisitStatusProperty
         {
             get
             {
-                return _lineThree;
+                return _visitStatusProperty;
             }
             set
             {
-                if (value != _lineThree)
-                {
-                    _lineThree = value;
-                    NotifyPropertyChanged("LineThree");
-                }
+                if (value == _visitStatusProperty) return;
+                _visitStatusProperty = value;
+                NotifyPropertyChanged("VisitStatusProperty");
             }
         }
 
         private MapLocation _location;
-        /// <summary>
-        /// Sample ViewModel property; this property is used in the view to display its value using a Binding.
-        /// </summary>
-        /// <returns></returns>
         public MapLocation Location
         {
             get
@@ -93,6 +79,36 @@ namespace App.ViewModels
             if (null != handler)
             {
                 handler(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        private string _largeImage;
+        public string LargeImage
+        {
+            get
+            {
+                return _largeImage;
+            }
+            set
+            {
+                if (value == _largeImage) return;
+                _largeImage = value;
+                NotifyPropertyChanged("LargeImage");
+            }
+        }
+
+        private string _thumbNail;
+        public string ThumbNail
+        {
+            get
+            {
+                return _thumbNail;
+            }
+            set
+            {
+                if (value == _thumbNail) return;
+                _thumbNail = value;
+                NotifyPropertyChanged("ThumbNail");
             }
         }
     }

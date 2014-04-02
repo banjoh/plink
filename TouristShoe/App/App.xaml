@@ -15,6 +15,7 @@
         <!-- Value Converters -->
         <utils:BooleanToVisibilityConverter x:Name="BooleanToVisibilityConverter"/>
         <utils:ShoeStatusToResourceConverter x:Name="ShoeStatusToResourceConverter"/>
+        <utils:VisitStatusToResourceConverter x:Name="VisitStatusToResourceConverter"/>
 
         <!-- Custom progress bar -->
         <Style x:Key="CustomIndeterminateProgressBar" TargetType="ProgressBar">

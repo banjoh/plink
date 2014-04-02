@@ -2,6 +2,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading.Tasks;
+using Windows.Foundation;
 using App.Resources;
 using System.Diagnostics;
 using System.Windows;
@@ -67,8 +69,8 @@ namespace App.ViewModels
             }
         }
 
-        private string _shoeLogo;
-        public string ShoeConnectionStatus
+        private ShoeModel.Status _shoeLogo;
+        public ShoeModel.Status ShoeConnectionStatus
         {
             get
             {
@@ -76,26 +78,8 @@ namespace App.ViewModels
             }
             set
             {
-                ShoeModel.Status s;
-                if (Enum.TryParse<ShoeModel.Status>(value, out s))
-                {
-                    switch (s)
-                    {
-                        case ShoeModel.Status.BothConnected:
-                            _shoeLogo = "Resources\\shoes_connected.png";
-                            break;
-                        case ShoeModel.Status.LeftConnected:
-                            _shoeLogo = "Resources\\shoes_left_red.png";
-                            break;
-                        case ShoeModel.Status.RightConnected:
-                            _shoeLogo = "Resources\\shoes_right_red.png";
-                            break;
-                        default:
-                            _shoeLogo = "Resources\\shoes_notconnected.png";
-                            break;
-                    }
-                    NotifyPropertyChanged("ShoeConnectionStatus");
-                }
+                _shoeLogo = value;
+                NotifyPropertyChanged("ShoeConnectionStatus");
             }
         }
 
@@ -177,11 +161,15 @@ namespace App.ViewModels
         {
             Debug.WriteLine("Loading data");
             Loading = true;
-            ShoeConnectionStatus = ShoeModel.Status.Disconnected.ToString();
+            ShoeConnectionStatus = ShoeModel.Status.Disconnected;
+            Debug.WriteLine("Connecting shoe");
+            Task connecTask = App.ShoeModel.ConnectToShoes();
             try
             {
                 // Get the current position
+                Debug.WriteLine("Getting position");
                 Geoposition myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
+                Debug.WriteLine("Done getting pos");
                 MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
@@ -212,17 +200,17 @@ namespace App.ViewModels
             
             foreach (var p in places)
             {
-                var query = new GeocodeQuery {SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation};
+                var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
                 query.QueryCompleted += query_QueryCompleted;
                 query.QueryAsync();
             }
 
-            //this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            //this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
-            //this.Items.Add(new ItemViewModel() { LineOne = "runtime two", LineTwo = "Dictumst eleifend facilisi faucibus", LineThree = "Suscipit torquent ultrices vehicula volutpat maecenas praesent accumsan bibendum dictumst eleifend facilisi faucibus" });
+            // Wait for the connection task
+            Debug.WriteLine("Waiting for shoe");
+            await connecTask;
+            Debug.WriteLine("DONE waiting for shoe");
             
             Debug.WriteLine("Data loaded");
-            App.ShoeModel.ConnectToShoes();
             IsDataLoaded = true;
             Loading = false;
         }
@@ -253,7 +241,15 @@ namespace App.ViewModels
             _placesNotGeoCoded--;
             if (e.Result.Count <= 0) return;
             var loc = e.Result[0];
-            this.Items.Add(new ItemViewModel() { LineOne = loc.Information.Address.Street, LineTwo = loc.Information.Address.City, Location = loc });
+            App.Dispatch(() => Items.Add(new ItemViewModel()
+            {
+                LineOne = loc.Information.Address.Street,
+                LineTwo = loc.Information.Address.City,
+                Location = loc,
+                VisitStatusProperty = ItemViewModel.VisitStatus.No,
+                ThumbNail = @"Assets\white_church_thumb.jpg",
+                LargeImage = @"Assets\white_church.jpg"
+            }));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
