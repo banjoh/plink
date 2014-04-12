@@ -39,17 +39,33 @@
             Margin="0,-30,0,0"
             Style="{StaticResource CustomIndeterminateProgressBar}"/>
 
-        <!-- Shoe image -->
-        <Image
-            Grid.Row="1"
-            Source="{Binding ShoeConnectionStatus, Converter={StaticResource ShoeStatusToResourceConverter}}"
-            HorizontalAlignment="Center"
-            Width="50"
-            Height="50"
-            Tap="ShoeImage_OnTap"/>
+        <!-- Shoe shoe image and GO button -->
+        <Grid Grid.Row="1" Margin="0,-10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Image
+                Grid.Column="0"
+                Source="{Binding ShoeConnectionStatus, Converter={StaticResource ShoeStatusToResourceConverter}}"
+                HorizontalAlignment="Center"
+                Width="50"
+                Height="50"
+                Margin="-140,0,0,0"
+                Tap="ShoeImage_OnTap"/>
+            <Image
+                x:Name="GoImage"
+                Grid.Column="1"
+                Source="Resources\go_button.png"
+                HorizontalAlignment="Center"
+                Width="80"
+                Height="80"
+                Margin="0,0,-120,0"
+                Tap="GoImage_OnTap"/>
+        </Grid>
         
         <!--Pivot Control-->
-        <phone:Pivot Grid.Row="2" Margin="0,-10,0,0">
+        <phone:Pivot Grid.Row="2" Margin="0,-20,0,0">
             <phone:Pivot.HeaderTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}" Style="{StaticResource CustomPivotHeaders}"/>

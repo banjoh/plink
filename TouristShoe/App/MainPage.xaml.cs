@@ -276,5 +276,13 @@ namespace App
             // A little hack to get the LLS to fire SelectionChange after clicking the same list item
             lls.SelectedItem = null;
         }
+
+        private void GoImage_OnTap(object sender, GestureEventArgs e)
+        {
+            if (sender != GoImage) return;
+
+            MessageBox.Show("Please lock your phone and put it in your pocket then LOOK UP!", "Ready to GO?", MessageBoxButton.OK);
+            // TODO: Put the app in the background
+        }
     }
 }

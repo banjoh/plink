@@ -156,7 +156,9 @@
     <Content Include="Assets\white_church.jpg" />
     <Content Include="Assets\white_church_thumb.jpg" />
     <Content Include="README_FIRST.txt" />
+    <Content Include="Resources\applist_icon.png" />
     <Content Include="Resources\box_rounded_green.png" />
+    <Content Include="Resources\go_button.png" />
     <Content Include="Resources\map_symbol_green.png" />
     <Content Include="Resources\minus_green.png" />
     <Content Include="Resources\plus_green.png" />
