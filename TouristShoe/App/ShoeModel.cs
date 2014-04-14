@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -41,7 +42,28 @@ namespace App
 
         // Socket used to communicate with the shoes through bluetooth
 		private StreamSocket _leftStreamSocket;
+        private bool LeftConnected
+        {
+            get
+            {
+                lock (this)
+                {
+                    return _leftStreamSocket != null;
+                }
+            }
+        }
+
         private StreamSocket _rightStreamSocket;
+        private bool RightConnected
+        {
+            get
+            {
+                lock (this)
+                {
+                    return _rightStreamSocket != null;
+                }
+            }
+        }
 
         public ShoeModel()
         {
@@ -59,12 +81,9 @@ namespace App
                 
                 // Store all maneuvers in a Queue
                 _maneuvers.Clear();
-                foreach (RouteLeg leg in _route.Legs)
+                foreach (RouteManeuver man in _route.Legs.SelectMany(leg => leg.Maneuvers))
                 {
-                    foreach (RouteManeuver man in leg.Maneuvers)
-                    {
-                        _maneuvers.Enqueue(man);
-                    }
+                    _maneuvers.Enqueue(man);
                 }
 
                 Debug.WriteLine("ShoeModel: Route updated");
@@ -88,26 +107,81 @@ namespace App
             _leftStreamSocket = results[0];
             _rightStreamSocket = results[1];
 
-            if (_leftStreamSocket != null && _rightStreamSocket != null)
+            Status s = Status.Disconnected;
+
+            if (_leftStreamSocket != null)
             {
-                App.ViewModel.ShoeConnectionStatus = Status.Connected;
-                App.Log("Both shoes connected!!!");
-            }
-            else if (_leftStreamSocket != null)
-            {
-                App.ViewModel.ShoeConnectionStatus = Status.LeftConnected;
+                s = Status.LeftConnected;
+                new Thread(ListenLeft).Start(new Tuple<StreamSocket, ShoeModel>(_leftStreamSocket, this));
+
                 App.Log("Left shoe connected!!!");
             }
-            else if (_rightStreamSocket != null)
+
+            if (_rightStreamSocket != null)
             {
-                App.ViewModel.ShoeConnectionStatus = Status.RightConnected;
+                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
+                new Thread(ListenRight).Start(new Tuple<StreamSocket, ShoeModel>(_rightStreamSocket, this));
                 App.Log("Right shoe connected!!!");
             }
-            else
+            App.ViewModel.ShoeConnectionStatus = s;
+        }
+
+        private async static void ListenLeft(object o)
+        {
+            Tuple<StreamSocket, ShoeModel> t = o as Tuple<StreamSocket, ShoeModel>;
+            if (t == null) return;
+
+            StreamSocket s = t.Item1 as StreamSocket;
+            ShoeModel m = t.Item2 as ShoeModel;
+            if (s == null || m == null) return;
+            
+            App.Log("Listening left read");
+            
+            while (m.LeftConnected)
             {
-                App.ViewModel.ShoeConnectionStatus = Status.Disconnected;
-                App.Log("Both shoes disconnected :(");
+                using (var dataReader = new DataReader(s.InputStream))
+                {
+                    // The encoding and byte order need to match the settings of the writer 
+                    // we previously used.
+                    dataReader.UnicodeEncoding = UnicodeEncoding.Utf8;
+                    dataReader.ByteOrder = ByteOrder.LittleEndian;
+                    dataReader.InputStreamOptions = InputStreamOptions.Partial;
+
+                    App.Log("AWAIT READ LEFT");
+                    // Once we have written the contents successfully we load the stream.
+                    await dataReader.LoadAsync(12);
+
+                    App.Log("READ BYTES FROM STREAD");
+
+                    // Keep reading until we consume the complete stream.
+                    while (dataReader.UnconsumedBufferLength > 0)
+                    {
+                        // Note that the call to readString requires a length of "code units" 
+                        // to read. This is the reason each string is preceded by its length 
+                        // when "on the wire".
+                        string receivedStrings = dataReader.ReadString(12) + "\n";
+                        App.Log("COMPASS: " + receivedStrings);
+                    }
+
+                    App.Log("DETATCH");
+                    // Detatch stream to avoid getting it closed
+                    dataReader.DetachStream();
+                }
             }
+
+            // Listen to incoming messages
+            // http://msdn.microsoft.com/en-US/library/windows/apps/windows.storage.streams.datareader
+        }
+
+        private static void ListenRight(object o)
+        {
+            /*StreamSocket s = o as StreamSocket;
+            if (s == null) return;
+
+            while(s.)
+
+            // Listen to incoming messages
+            // http://msdn.microsoft.com/en-US/library/windows/apps/windows.storage.streams.datareader*/
         }
 
         private static async Task<bool> EnsureBluethoothConnected()
@@ -123,34 +197,36 @@ namespace App
                 // Execute code in UI thread
                 App.Dispatch(() =>
                 {
-                    if ((uint)ex.HResult == 0x8007048F)
+                    switch ((uint)ex.HResult)
                     {
-                        var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?",
-                            "Bluetooth Off", MessageBoxButton.OKCancel);
-                        if (result == MessageBoxResult.OK)
+                        case 0x8007048F:
                         {
-                            var connectionSettingsTask = new ConnectionSettingsTask
+                            var result = MessageBox.Show("Your bluetooth network is turned off. Do you want to turn it ON?",
+                                "Bluetooth Off", MessageBoxButton.OKCancel);
+                            if (result == MessageBoxResult.OK)
                             {
-                                ConnectionSettingsType = ConnectionSettingsType.Bluetooth
-                            };
-                            connectionSettingsTask.Show();
+                                var connectionSettingsTask = new ConnectionSettingsTask
+                                {
+                                    ConnectionSettingsType = ConnectionSettingsType.Bluetooth
+                                };
+                                connectionSettingsTask.Show();
+                            }
                         }
+                            break;
+                        case 0x8007271D:
+                            MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
+                            break;
+                        case 0x80072740:
+                            MessageBox.Show("The Bluetooth port is already in use.");
+                            break;
+                        case 0x8007274C:
+                            MessageBox.Show(
+                                "Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
+                            break;
+                        default:
+                            MessageBox.Show(ex.Message);
+                            break;
                     }
-                    else if ((uint)ex.HResult == 0x8007271D)
-                    {
-                        //0x80070005 - previous error code that may be wrong?
-                        MessageBox.Show("To run this app, you must have ID_CAP_PROXIMITY enabled in WMAppManifest.xaml");
-                    }
-                    else if ((uint)ex.HResult == 0x80072740)
-                    {
-                        MessageBox.Show("The Bluetooth port is already in use.");
-                    }
-                    else if ((uint)ex.HResult == 0x8007274C)
-                    {
-                        MessageBox.Show(
-                            "Could not connect to the left shoe Bluetooth Device. Please make sure it is switched on.");
-                    }
-                    else MessageBox.Show(ex.Message);
                 });
                 return false;
             }
@@ -171,11 +247,9 @@ namespace App
                 foreach (PeerInformation p in pairedDevices)
                 {
                     App.Log(p.DisplayName);
-                    if (p.DisplayName == shoe)
-                    {
-                        selectedDevice = p;
-                        break;
-                    }
+                    if (p.DisplayName != shoe) continue;
+                    selectedDevice = p;
+                    break;
                 }
                 if (selectedDevice == null)
                 {
@@ -185,14 +259,12 @@ namespace App
                             MessageBox.Show(
                                 "Each shoe needs to be paired atleast once before using this application :)",
                                 "Pair " + shoe, MessageBoxButton.OKCancel);
-                        if (result == MessageBoxResult.OK)
+                        if (result != MessageBoxResult.OK) return;
+                        var connectionSettingsTask = new ConnectionSettingsTask
                         {
-                            var connectionSettingsTask = new ConnectionSettingsTask
-                            {
-                                ConnectionSettingsType = ConnectionSettingsType.Bluetooth
-                            };
-                            connectionSettingsTask.Show();
-                        }
+                            ConnectionSettingsType = ConnectionSettingsType.Bluetooth
+                        };
+                        connectionSettingsTask.Show();
                     });
                     App.Log("Shoe " + shoe + " NOT FOUND");
                     return null;
@@ -264,7 +336,7 @@ namespace App
             InstructShoes(maneuver.InstructionKind);
         }
 
-        public void InstructShoes(RouteManeuverInstructionKind maneuverKind)
+        public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
         {
             ShowToast("Now turn " + maneuverKind);
 
@@ -294,28 +366,31 @@ namespace App
                     return;
             }
 
-            // TODO: Send message to shoe
+            await Task.WhenAll(tasks.ToArray());
             App.Log("Turn " + instruction);
-
-            Task.WaitAll(tasks.ToArray());
         }
 
-        private async void SendMessage(StreamSocket s, byte msg)
+        private static async void SendMessage(StreamSocket s, byte msg)
         {
+            if (s == null) return;
+
             // Create the data writer object backed by the in-memory stream.
             try
             {
                 using (var dataWriter = new DataWriter(s.OutputStream))
                 {
                     // Parse the input stream and write each element separately.
+                    App.Log("WRITE TO STREAM " + msg);
                     dataWriter.WriteByte(msg);
 
                     // Send the contents of the writer to the backing stream.
-                    Debug.WriteLine(Convert.ToString(await dataWriter.StoreAsync()));
+                    App.Log("STORE TO STREAM " + msg);
+                    await dataWriter.StoreAsync();
 
                     // For the in-memory stream implementation we are using, the flushAsync call 
                     // is unnecessary, but other types of streams may require it.
-                    Debug.WriteLine(Convert.ToString(await dataWriter.FlushAsync()));
+                    App.Log("FLUSH TO STREAM " + msg);
+                    await dataWriter.FlushAsync();
 
                     // In order to prolong the lifetime of the stream, detach it from the 
                     // DataWriter so that it will not be closed when Dispose() is called on 

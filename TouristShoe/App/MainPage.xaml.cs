@@ -78,8 +78,8 @@ namespace App
             var locCircle = new Ellipse 
             {
                 Fill = new SolidColorBrush(Colors.Green),
-                Height = 10,
-                Width = 10
+                Height = 20,
+                Width = 20
             };
             
             var overlay = new MapOverlay
@@ -103,10 +103,10 @@ namespace App
                 UpdateMyCurrectLocation();
             }
 
-            if (e.PropertyName == "HeadingLocation")
+            /*if (e.PropertyName == "HeadingLocation")
             {
                 App.Dispatch(() => AddHeadingLocToMap(App.ViewModel.HeadingLocation));
-            }
+            }*/
         }
 
         private void AddHeadingLocToMap(GeoCoordinate coord)
@@ -130,7 +130,7 @@ namespace App
         private void AddPlaceToMap(GeoCoordinate coord)
         {
             // Create my location marker
-            var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Red), Height = 10, Width = 10 };
+            var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Red), Height = 20, Width = 20 };
 
             var overlay = new MapOverlay
             {
@@ -227,8 +227,6 @@ namespace App
                     break;
                 case "Turn Back":
                     App.ShoeModel.InstructShoes(RouteManeuverInstructionKind.UTurnLeft);
-                    break;
-                default:
                     break;
             }
         }
