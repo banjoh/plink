@@ -10,6 +10,8 @@ using System.Windows;
 using Microsoft.Phone.Shell;
 using System.Diagnostics;
 using System.Linq;
+using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
@@ -35,6 +37,8 @@ namespace App
             BluetoothOff
         }
 
+        const int BUFFER_SIZE = 10;
+
         // Route geometry needed to generate directional commands sent to the
         // shoes.
         private Route _route;
@@ -42,33 +46,22 @@ namespace App
 
         // Socket used to communicate with the shoes through bluetooth
 		private StreamSocket _leftStreamSocket;
-        private bool LeftConnected
-        {
-            get
-            {
-                lock (this)
-                {
-                    return _leftStreamSocket != null;
-                }
-            }
-        }
-
+        private DataReader _leftReader;
+        private DataWriter _leftWriter;
+        
         private StreamSocket _rightStreamSocket;
-        private bool RightConnected
-        {
-            get
-            {
-                lock (this)
-                {
-                    return _rightStreamSocket != null;
-                }
-            }
-        }
-
+        private DataReader _rightReader;
+        private DataWriter _rightWriter;
+        
         public ShoeModel()
         {
             App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        }
+
+        public void DeInit()
+        { 
+            
         }
 
         void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -111,77 +104,141 @@ namespace App
 
             if (_leftStreamSocket != null)
             {
+                _leftWriter = new DataWriter(_leftStreamSocket.OutputStream);
+                _leftReader = new DataReader(_leftStreamSocket.InputStream);
                 s = Status.LeftConnected;
-                new Thread(ListenLeft).Start(new Tuple<StreamSocket, ShoeModel>(_leftStreamSocket, this));
-
+                new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_leftReader, this));
                 App.Log("Left shoe connected!!!");
             }
 
             if (_rightStreamSocket != null)
             {
+                _rightWriter = new DataWriter(_rightStreamSocket.OutputStream);
+                _rightReader = new DataReader(_rightStreamSocket.InputStream);
                 s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
-                new Thread(ListenRight).Start(new Tuple<StreamSocket, ShoeModel>(_rightStreamSocket, this));
+                new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_rightReader, this));
                 App.Log("Right shoe connected!!!");
             }
             App.ViewModel.ShoeConnectionStatus = s;
         }
 
-        private async static void ListenLeft(object o)
+        private bool ShoeConnected(DataReader r)
         {
-            Tuple<StreamSocket, ShoeModel> t = o as Tuple<StreamSocket, ShoeModel>;
-            if (t == null) return;
-
-            StreamSocket s = t.Item1 as StreamSocket;
-            ShoeModel m = t.Item2 as ShoeModel;
-            if (s == null || m == null) return;
-            
-            App.Log("Listening left read");
-            
-            while (m.LeftConnected)
+            lock (this)
             {
-                using (var dataReader = new DataReader(s.InputStream))
-                {
-                    // The encoding and byte order need to match the settings of the writer 
-                    // we previously used.
-                    dataReader.UnicodeEncoding = UnicodeEncoding.Utf8;
-                    dataReader.ByteOrder = ByteOrder.LittleEndian;
-                    dataReader.InputStreamOptions = InputStreamOptions.Partial;
+                if (r == null) return false;
 
-                    App.Log("AWAIT READ LEFT");
-                    // Once we have written the contents successfully we load the stream.
-                    await dataReader.LoadAsync(12);
+                if (r == _rightReader && _rightStreamSocket != null) return true;
 
-                    App.Log("READ BYTES FROM STREAD");
+                if (r == _leftReader && _leftStreamSocket != null) return true;
 
-                    // Keep reading until we consume the complete stream.
-                    while (dataReader.UnconsumedBufferLength > 0)
-                    {
-                        // Note that the call to readString requires a length of "code units" 
-                        // to read. This is the reason each string is preceded by its length 
-                        // when "on the wire".
-                        string receivedStrings = dataReader.ReadString(12) + "\n";
-                        App.Log("COMPASS: " + receivedStrings);
-                    }
-
-                    App.Log("DETATCH");
-                    // Detatch stream to avoid getting it closed
-                    dataReader.DetachStream();
-                }
+                return false;
             }
-
-            // Listen to incoming messages
-            // http://msdn.microsoft.com/en-US/library/windows/apps/windows.storage.streams.datareader
         }
 
-        private static void ListenRight(object o)
+        private static void ListenToShoe(object o)
         {
-            /*StreamSocket s = o as StreamSocket;
-            if (s == null) return;
+            Tuple<DataReader, ShoeModel> t = o as Tuple<DataReader, ShoeModel>;
+            if (t == null) return;
 
-            while(s.)
+            ShoeModel m = t.Item2 as ShoeModel;
+            if (m == null) return;
 
-            // Listen to incoming messages
-            // http://msdn.microsoft.com/en-US/library/windows/apps/windows.storage.streams.datareader*/
+            DataReader reader = t.Item1 as DataReader;
+            App.Log("Listening shoe read");
+            string received = "";
+            while (m.ShoeConnected(reader))
+            {
+                received += ReadMessage(reader);
+                App.Log("BEFORE: " + received);
+
+                string s = "";
+                // TODO: This logic needs unit tests BAAADLY!!!
+                for(int i = 0; i < received.Length; i++)
+                {
+                    char c = received[i];
+                    if (c == '[')
+                    {
+                        continue;
+                    }
+                    if (c == ']')
+                    {
+                        string afterRemove = received.Remove(0, i + 1);
+                        if (Regex.IsMatch(s, @"^(.[0-9]*)#(.[0-9]*)$"))
+                        {
+                            // TODO: Event for compass change
+                            string[] arr = s.Split('#');
+
+                            try
+                            {
+                                int x = Int32.Parse(arr[0]);
+                                int y = Int32.Parse(arr[1]);
+                                Tuple<int, int> tuple = new Tuple<int, int>(x, y);
+                                App.Log("COMPASS " + tuple);
+
+                                //TODO; Tell client of compass change
+                            }
+                            catch (Exception ex)
+                            {
+                                App.Log("PARSE EX: " + ex.Message);
+                            }
+                        }
+                        else if (Regex.IsMatch(s, "^1$"))
+                        {
+                            // TODO: Event for vibrated
+                            App.Log("VIBRATED " + s);
+                        }
+
+                        App.Log("R = " + afterRemove + ", S = " + s);
+                        if (!Regex.IsMatch(afterRemove, @"\[(.*)\]"))
+                        {
+                            App.Log("Lets break now");
+                            received = afterRemove;
+                            break;
+                        }
+                        else
+                        {
+                            s = "";
+                            App.Log("Continue parsing");
+                            continue;
+                        }
+                    }
+                    s += c;
+                }
+            }
+        }
+
+        private static string ReadMessage(DataReader reader)
+        {
+            string ret = "";
+            try
+            {
+                // The encoding and byte order need to match the settings of the writer 
+                // we previously used.
+                reader.InputStreamOptions = InputStreamOptions.Partial;
+
+                //App.Log("AWAIT READ LEFT: " + (c++));
+                // Once we have written the contents successfully we load the stream.
+                reader.LoadAsync(BUFFER_SIZE).AsTask().Wait();
+                
+                // Keep reading until we consume the complete stream.
+                uint count = reader.UnconsumedBufferLength;
+                while (reader.UnconsumedBufferLength > 0)
+                {
+                    // Note that the call to readString requires a length of "code units" 
+                    // to read. This is the reason each string is preceded by its length 
+                    // when "on the wire".
+                    ret += reader.ReadString(1);
+                }
+
+                App.Log("READ: " + ret + ", Count: " + count);
+            }
+            catch (Exception ex)
+            {
+                App.Log("READING EX: " + ex.Message);
+            }
+
+            return ret;
         }
 
         private static async Task<bool> EnsureBluethoothConnected()
@@ -346,21 +403,21 @@ namespace App
             { 
                 case RouteManeuverInstructionKind.TurnLeft:
                     instruction = 1;
-                    tasks.Add(Task.Run(() => SendMessage(_leftStreamSocket, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, instruction)));
                     break;
                 case RouteManeuverInstructionKind.TurnRight:
                     instruction = 2;
-                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
                     break;
                 case RouteManeuverInstructionKind.GoStraight:
                     instruction = 3;
-                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
-                    tasks.Add(Task.Run(() => SendMessage(_leftStreamSocket, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, instruction)));
                     break;
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
                     instruction = 4;
-                    tasks.Add(Task.Run(() => SendMessage(_rightStreamSocket, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
                     break;
                 default:
                     return;
@@ -370,35 +427,19 @@ namespace App
             App.Log("Turn " + instruction);
         }
 
-        private static async void SendMessage(StreamSocket s, byte msg)
+        private static async void SendMessage(DataWriter d, byte msg)
         {
-            if (s == null) return;
+            if (d == null) return;
 
             // Create the data writer object backed by the in-memory stream.
             try
             {
-                using (var dataWriter = new DataWriter(s.OutputStream))
-                {
-                    // Parse the input stream and write each element separately.
-                    App.Log("WRITE TO STREAM " + msg);
-                    dataWriter.WriteByte(msg);
+                d.WriteByte(msg);
+                await d.StoreAsync();
 
-                    // Send the contents of the writer to the backing stream.
-                    App.Log("STORE TO STREAM " + msg);
-                    await dataWriter.StoreAsync();
-
-                    // For the in-memory stream implementation we are using, the flushAsync call 
-                    // is unnecessary, but other types of streams may require it.
-                    App.Log("FLUSH TO STREAM " + msg);
-                    await dataWriter.FlushAsync();
-
-                    // In order to prolong the lifetime of the stream, detach it from the 
-                    // DataWriter so that it will not be closed when Dispose() is called on 
-                    // dataWriter. Were we to fail to detach the stream, the call to 
-                    // dataWriter.Dispose() would close the underlying stream, preventing 
-                    // its subsequent use by the DataReader below.
-                    dataWriter.DetachStream();
-                }
+                // For the in-memory stream implementation we are using, the flushAsync call 
+                // is unnecessary, but other types of streams may require it.
+                await d.FlushAsync();
             }
             catch (Exception ex)
             {
