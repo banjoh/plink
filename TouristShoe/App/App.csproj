@@ -109,8 +109,9 @@
     <Compile Include="Utils\BooleanToVisibilityConverter.cs" />
     <Compile Include="Utils\ShoeStatusToResourceConverter.cs" />
     <Compile Include="Utils\VisitStatusToResourceConverter.cs" />
-    <Compile Include="ViewModels\ItemViewModel.cs" />
+    <Compile Include="ViewModels\PlacesViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\SearchViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

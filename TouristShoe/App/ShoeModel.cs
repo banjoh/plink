@@ -164,7 +164,8 @@ namespace App
                     if (c == ']')
                     {
                         string afterRemove = received.Remove(0, i + 1);
-                        if (Regex.IsMatch(s, @"^(.[0-9]*)#(.[0-9]*)$"))
+                        // Compass direction change
+                        if (Regex.IsMatch(s, @"^(.[0-9]*)\.(.[0-9]*)$"))
                         {
                             // TODO: Event for compass change
                             string[] arr = s.Split('#');
@@ -183,14 +184,21 @@ namespace App
                                 App.Log("PARSE EX: " + ex.Message);
                             }
                         }
-                        else if (Regex.IsMatch(s, "^1$"))
+                        // Left vibrated
+                        else if (Regex.IsMatch(s, "^L$"))
+                        {
+                            // TODO: Event for vibrated
+                            App.Log("VIBRATED " + s);
+                        }
+                        // Right vibrated
+                        else if (Regex.IsMatch(s, "^R$"))
                         {
                             // TODO: Event for vibrated
                             App.Log("VIBRATED " + s);
                         }
 
                         App.Log("R = " + afterRemove + ", S = " + s);
-                        if (!Regex.IsMatch(afterRemove, @"\[(.*)\]"))
+                        if (!Regex.IsMatch(afterRemove, @"^\[(.*)\](.*)"))
                         {
                             App.Log("Lets break now");
                             received = afterRemove;
@@ -217,7 +225,6 @@ namespace App
                 // we previously used.
                 reader.InputStreamOptions = InputStreamOptions.Partial;
 
-                //App.Log("AWAIT READ LEFT: " + (c++));
                 // Once we have written the contents successfully we load the stream.
                 reader.LoadAsync(BUFFER_SIZE).AsTask().Wait();
                 
@@ -451,7 +458,7 @@ namespace App
         {
             if (App.RunningInBackground)
             {
-                var toast = new ShellToast { Content = s, Title = "Shoe" };
+                var toast = new ShellToast { Content = s, Title = "Buzz Way" };
                 toast.Show();
             }
             App.Log(s);

@@ -46,6 +46,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Image
+                x:Name="ShoeImage"
                 Grid.Column="0"
                 Source="{Binding ShoeConnectionStatus, Converter={StaticResource ShoeStatusToResourceConverter}}"
                 HorizontalAlignment="Center"
@@ -65,7 +66,7 @@
         </Grid>
         
         <!--Pivot Control-->
-        <phone:Pivot Grid.Row="2" Margin="0,-20,0,0">
+        <phone:Pivot Grid.Row="2" Margin="0,-20,0,0" x:Name="PivotControl">
             <phone:Pivot.HeaderTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}" Style="{StaticResource CustomPivotHeaders}"/>
@@ -74,7 +75,7 @@
             <!--Pivot item one-->
             <phone:PivotItem Header="Places">
                 <!--Double line list with text wrapping-->
-                <phone:LongListSelector x:Name="LLS" Margin="0,-20,0,0" ItemsSource="{Binding Items}" SelectionChanged="LongListSelector_OnSelectionChanged">
+                <phone:LongListSelector x:Name="PlacesLLS" Margin="0,-20,0,0" ItemsSource="{Binding Places}" SelectionChanged="LongListSelector_OnSelectionChanged">
                     <phone:LongListSelector.ItemTemplate>
                         <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
                             <Grid Background="{StaticResource ListBackground}" Margin="0,0,0,17">
@@ -105,10 +106,32 @@
             </phone:PivotItem>
 
             <!--Pivot item two-->
-            <phone:PivotItem Header="Map">
+            <phone:PivotItem Header="Map" x:Name="Map">
                 <maps:Map x:Name="MapControl"
                       LandmarksEnabled="True"
                       PedestrianFeaturesEnabled="True" Margin="0,-20,0,0"/>
+            </phone:PivotItem>
+            
+            <phone:PivotItem Header="Search">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBox x:Name="SearchBox" Grid.Row="0" Margin="0,-30,0,0" InputScope="Search" KeyUp="SearchBox_KeyUp"/>
+                    <!--Double line list with text wrapping-->
+                    <phone:LongListSelector x:Name="SearchLLS" Grid.Row="1" ItemsSource="{Binding Searches}">
+                        <phone:LongListSelector.ItemTemplate>
+                            <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
+                                <StackPanel Tap="StackPanel_Tap">
+                                    <TextBlock Text="{Binding LineOne}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextLargeStyle}"/>
+                                    <TextBlock Text="{Binding LineTwo}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextSmallStyle}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </phone:LongListSelector.ItemTemplate>
+                    </phone:LongListSelector>
+                </Grid>
             </phone:PivotItem>
 
             <!--Pivot item two-->

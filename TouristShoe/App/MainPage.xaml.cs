@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Phone.Controls;
@@ -28,7 +29,7 @@ namespace App
         private MapRoute _mapRoute;
         private bool _signTapped = false;
         private bool _mapSymbolTapped = false;
-        private ItemViewModel _navItem = null;
+        private PlacesViewModel _navItem = null;
         
         // Constructor
         public MainPage()
@@ -47,15 +48,15 @@ namespace App
 
             // Listen to view model changes
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-            App.ViewModel.Items.CollectionChanged += Items_CollectionChanged;
+            App.ViewModel.Places.CollectionChanged += Items_CollectionChanged;
         }
 
         void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             foreach (var item in e.NewItems)
             {
-                var it = (ItemViewModel)item;
-                if (it.Location == null) continue;
+                var it = item as PlacesViewModel;
+                if (it == null || it.Location == null) continue;
                 AddPlaceToMap(it.Location.GeoCoordinate);
             }
 
@@ -63,7 +64,7 @@ namespace App
 
             // Update the route on map
             var coords = new List<GeoCoordinate> {App.ViewModel.MyLocation};
-            foreach (var it in App.ViewModel.Items)
+            foreach (var it in App.ViewModel.Places)
             {
                 if (it.Location == null) continue;
                 coords.Add(it.Location.GeoCoordinate);
@@ -130,11 +131,12 @@ namespace App
         private void AddPlaceToMap(GeoCoordinate coord)
         {
             // Create my location marker
-            var locCircle = new Ellipse { Fill = new SolidColorBrush(Colors.Red), Height = 20, Width = 20 };
+            var locImage = new Image { Width = 40, Height = 40 };
+            locImage.Source = new BitmapImage(new Uri(@"/Resources/map_symbol_green.png", UriKind.Relative));
 
             var overlay = new MapOverlay
             {
-                Content = locCircle,
+                Content = locImage,
                 GeoCoordinate = coord,
                 PositionOrigin = new Point(0, 0)
             };
@@ -145,16 +147,16 @@ namespace App
             MapControl.SetView(App.ViewModel.MyLocation, 15);
         }
 
-        private void UpdateRoute(IReadOnlyCollection<GeoCoordinate> places)
+        private void UpdateRoute(IReadOnlyCollection<GeoCoordinate> locations)
         {
-            if (places.Count < 2) return;
-            
+            if (locations.Count < 2) return;
+
             // Get the route for the new set
             var routeQuery = new RouteQuery
             {
                 TravelMode = TravelMode.Walking,
                 RouteOptimization = RouteOptimization.MinimizeDistance,
-                Waypoints = places
+                Waypoints = locations
             };
             routeQuery.QueryCompleted += routeQuery_QueryCompleted;
             routeQuery.QueryAsync();
@@ -163,6 +165,7 @@ namespace App
         void routeQuery_QueryCompleted(object sender, QueryCompletedEventArgs<Route> e)
         {
             if (e.Error != null) return;
+
             // Remove old route
             if (_mapRoute != null)
             {
@@ -171,10 +174,12 @@ namespace App
 
             // Update UI route
             Route route = e.Result;
-            Debug.WriteLine("MainPage: Update route to Models");
+            App.Log("MainPage: Update route to Models");
             App.ViewModel.MyRoute = route;
             _mapRoute = new MapRoute(route);
             MapControl.AddRoute(_mapRoute);
+
+            PivotControl.SelectedItem = Map;
         }
 
         // Load data for the ViewModel Items
@@ -204,6 +209,8 @@ namespace App
 
         private async void ShoeImage_OnTap(object sender, System.Windows.Input.GestureEventArgs e)
         {
+            if (sender != ShoeImage) return;
+
             App.Log("Tapped image");
             App.ViewModel.Loading = true;
             await App.ShoeModel.ConnectToShoes();
@@ -246,18 +253,18 @@ namespace App
         private void LongListSelector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             LongListSelector lls = sender as LongListSelector;
-            if (sender != LLS || lls == null) return;
+            if (sender != PlacesLLS || lls == null) return;
             App.Log("LongListSelector_OnSelectionChanged");
                 
             
-            ItemViewModel item = lls.SelectedItem as ItemViewModel;
+            PlacesViewModel item = lls.SelectedItem as PlacesViewModel;
             if (item == null) return;
 
             if (_signTapped)
             {
-                item.VisitStatusProperty = item.VisitStatusProperty == ItemViewModel.VisitStatus.Yes
-                    ? ItemViewModel.VisitStatus.No
-                    : ItemViewModel.VisitStatus.Yes;
+                item.VisitStatusProperty = item.VisitStatusProperty == PlacesViewModel.VisitStatus.Yes
+                    ? PlacesViewModel.VisitStatus.No
+                    : PlacesViewModel.VisitStatus.Yes;
                 _signTapped = false;
             }
             else if (_mapSymbolTapped)
@@ -281,6 +288,32 @@ namespace App
 
             MessageBox.Show("Please lock your phone and put it in your pocket then LOOK UP!", "Ready to GO?", MessageBoxButton.OK);
             // TODO: Put the app in the background
+        }
+
+        private void SearchBox_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender != SearchBox || e == null || e.Key != System.Windows.Input.Key.Enter) return;
+
+            if (App.ViewModel.SearchAddress(SearchBox.Text))
+            {
+                // Give this page focus to hide keyboard.
+                this.Focus();
+            }
+        }
+
+        private void StackPanel_Tap(object sender, GestureEventArgs e)
+        {
+            SearchViewModel selectedItem = SearchLLS.SelectedItem as SearchViewModel;
+
+            if (selectedItem == null || selectedItem.Location == null) return;
+
+            // Update the route on map
+            var coords = new List<GeoCoordinate> { App.ViewModel.MyLocation };
+            coords.Add(selectedItem.Location.GeoCoordinate);
+
+            _placesLayer.Clear();
+            AddPlaceToMap(selectedItem.Location.GeoCoordinate);
+            UpdateRoute(coords);
         }
     }
 }

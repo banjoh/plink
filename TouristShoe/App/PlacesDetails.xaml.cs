@@ -12,7 +12,7 @@ namespace App
             InitializeComponent();
         }
 
-        public ItemViewModel Item { get; set; }
+        public PlacesViewModel Item { get; set; }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {

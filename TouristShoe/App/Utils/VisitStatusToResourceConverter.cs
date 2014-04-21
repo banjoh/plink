@@ -11,10 +11,10 @@ namespace App.Utils
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            ItemViewModel.VisitStatus s;
+            PlacesViewModel.VisitStatus s;
             try
             {
-                s = (ItemViewModel.VisitStatus) value;
+                s = (PlacesViewModel.VisitStatus) value;
             }
             catch (Exception)
             {
@@ -23,9 +23,9 @@ namespace App.Utils
 
             switch (s)
             {
-                case ItemViewModel.VisitStatus.Yes:
+                case PlacesViewModel.VisitStatus.Yes:
                     return "Resources\\minus_green.png";
-                case ItemViewModel.VisitStatus.No:
+                case PlacesViewModel.VisitStatus.No:
                     return "Resources\\plus_green.png";
                 default:
                     return DependencyProperty.UnsetValue;

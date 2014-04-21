@@ -20,15 +20,14 @@ namespace App.ViewModels
     {
         public MainViewModel()
         {
-            Items = new ObservableCollection<ItemViewModel>();
+            Places = new ObservableCollection<PlacesViewModel>();
+            Searches = new ObservableCollection<SearchViewModel>();
             Loading = false;
         }
 
-        /// <summary>
-        /// A collection for ItemViewModel objects.
-        /// </summary>
-        public ObservableCollection<ItemViewModel> Items { get; private set; }
-
+        public ObservableCollection<PlacesViewModel> Places { get; private set; }
+        public ObservableCollection<SearchViewModel> Searches { get; private set; }
+        
         private GeoCoordinate _myLoc = new GeoCoordinate(0, 0);
         private GeoCoordinate _headingLoc = new GeoCoordinate(0, 0);
         private int _placesNotGeoCoded = 0;
@@ -201,7 +200,7 @@ namespace App.ViewModels
             foreach (var p in places)
             {
                 var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
-                query.QueryCompleted += query_QueryCompleted;
+                query.QueryCompleted += places_Query_QueryCompleted;
                 query.QueryAsync();
             }
 
@@ -213,6 +212,58 @@ namespace App.ViewModels
             Debug.WriteLine("Data loaded");
             IsDataLoaded = true;
             Loading = false;
+        }
+
+        public bool SearchAddress(string term)
+        {
+            if (String.IsNullOrWhiteSpace(term)) return false;
+
+            Loading = true;
+            var searchQuery = new GeocodeQuery { SearchTerm = term, GeoCoordinate = MyLocation };
+            searchQuery.QueryCompleted += searchQuery_QueryCompleted;
+            
+            Searches.Clear();
+            Searches.Add(new SearchViewModel()
+            {
+                LineOne = "Searching..."
+            });
+
+            searchQuery.QueryAsync();
+
+            return true;
+        }
+
+        void searchQuery_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
+        {
+            if (e.Result.Count <= 0)
+            {
+                App.Dispatch(() => 
+                {
+                    Searches.Clear();
+                    Searches.Add(new SearchViewModel()
+                    {
+                        LineOne = "No search results"
+                    });
+                });
+                return;
+            }
+
+            App.Dispatch(() => 
+            {
+                Searches.Clear();
+                foreach (MapLocation loc in e.Result)
+                {
+                    Searches.Add(new SearchViewModel()
+                    {
+                        LineOne = String.IsNullOrWhiteSpace(loc.Information.Address.Street) ? loc.Information.Address.City : loc.Information.Address.Street + 
+                            (String.IsNullOrWhiteSpace(loc.Information.Address.HouseNumber) ? "" : " " + loc.Information.Address.HouseNumber),
+                        LineTwo = loc.Information.Address.City,
+                        Location = loc
+                    });
+                }
+
+                Loading = false;
+            });
         }
 
         void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
@@ -236,17 +287,17 @@ namespace App.ViewModels
             Debug.WriteLine("GeoLoc changed: {0}", args.Position.Coordinate.ToGeoCoordinate());
         }
 
-        void query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
+        void places_Query_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
         {
             _placesNotGeoCoded--;
             if (e.Result.Count <= 0) return;
             var loc = e.Result[0];
-            App.Dispatch(() => Items.Add(new ItemViewModel()
+            App.Dispatch(() => Places.Add(new PlacesViewModel()
             {
                 LineOne = loc.Information.Address.Street,
                 LineTwo = loc.Information.Address.City,
                 Location = loc,
-                VisitStatusProperty = ItemViewModel.VisitStatus.No,
+                VisitStatusProperty = PlacesViewModel.VisitStatus.No,
                 ThumbNail = @"Assets\white_church_thumb.jpg",
                 LargeImage = @"Assets\white_church.jpg"
             }));

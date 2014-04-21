@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Deployment xmlns="http://schemas.microsoft.com/windowsphone/2012/deployment" AppPlatformVersion="8.0">
   <DefaultLanguage xmlns="" code="en-US" />
-  <App xmlns="" ProductID="{3d35256c-fe07-418e-8fa5-be6fafe7c581}" Title="BuzzWay" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="App author" Description="Sample description" Publisher="App" PublisherID="{d05503d9-62ea-47c5-a42d-bfb1c11c84f2}">
+  <App xmlns="" ProductID="{3d35256c-fe07-418e-8fa5-be6fafe7c581}" Title="Buzz Way" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="App author" Description="Sample description" Publisher="App" PublisherID="{d05503d9-62ea-47c5-a42d-bfb1c11c84f2}">
     <IconPath IsRelative="true" IsResource="false">Resources\applist_icon.png</IconPath>
     <Capabilities>
       <Capability Name="ID_CAP_NETWORKING" />
