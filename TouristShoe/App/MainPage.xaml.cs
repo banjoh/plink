@@ -214,9 +214,9 @@ namespace App
             if (sender != ShoeImage) return;
 
             App.Log("Tapped image");
-            App.ViewModel.Loading = true;
+            App.ViewModel.Progress = true;
             await App.ShoeModel.ConnectToShoes();
-            App.ViewModel.Loading = false;
+            App.ViewModel.Progress = false;
         }
 
         private void Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)

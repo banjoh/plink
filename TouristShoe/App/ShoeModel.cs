@@ -405,33 +405,28 @@ namespace App
             ShowToast("Now turn " + maneuverKind);
 
             List<Task> tasks = new List<Task>();
-            byte instruction;
             switch (maneuverKind)
             { 
                 case RouteManeuverInstructionKind.TurnLeft:
-                    instruction = 1;
-                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, 1)));
                     break;
                 case RouteManeuverInstructionKind.TurnRight:
-                    instruction = 2;
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
                     break;
                 case RouteManeuverInstructionKind.GoStraight:
-                    instruction = 3;
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
-                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, 1)));
                     break;
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
-                    instruction = 4;
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, instruction)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
                     break;
                 default:
                     return;
             }
 
             await Task.WhenAll(tasks.ToArray());
-            App.Log("Turn " + instruction);
+            App.Log("Send direction instructon");
         }
 
         private static async void SendMessage(DataWriter d, byte msg)
@@ -443,10 +438,9 @@ namespace App
             {
                 d.WriteByte(msg);
                 await d.StoreAsync();
-
-                // For the in-memory stream implementation we are using, the flushAsync call 
-                // is unnecessary, but other types of streams may require it.
                 await d.FlushAsync();
+
+                // TODO: Wait for ACK message from shoe
             }
             catch (Exception ex)
             {

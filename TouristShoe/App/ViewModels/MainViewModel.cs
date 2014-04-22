@@ -22,7 +22,7 @@ namespace App.ViewModels
         {
             Places = new ObservableCollection<PlacesViewModel>();
             Searches = new ObservableCollection<SearchViewModel>();
-            Loading = false;
+            Progress = false;
         }
 
         public ObservableCollection<PlacesViewModel> Places { get; private set; }
@@ -143,7 +143,7 @@ namespace App.ViewModels
         }
 
         private bool _loading;
-        public bool Loading
+        public bool Progress
         {
             get { return _loading; }
             set
@@ -159,7 +159,7 @@ namespace App.ViewModels
         public async void LoadData()
         {
             Debug.WriteLine("Loading data");
-            Loading = true;
+            Progress = true;
             ShoeConnectionStatus = ShoeModel.Status.Disconnected;
             Debug.WriteLine("Connecting shoe");
             Task connecTask = App.ShoeModel.ConnectToShoes();
@@ -211,14 +211,14 @@ namespace App.ViewModels
             
             Debug.WriteLine("Data loaded");
             IsDataLoaded = true;
-            Loading = false;
+            Progress = false;
         }
 
         public bool SearchAddress(string term)
         {
             if (String.IsNullOrWhiteSpace(term)) return false;
 
-            Loading = true;
+            Progress = true;
             var searchQuery = new GeocodeQuery { SearchTerm = term, GeoCoordinate = MyLocation };
             searchQuery.QueryCompleted += searchQuery_QueryCompleted;
             
@@ -237,7 +237,7 @@ namespace App.ViewModels
         {
             if (e.Result.Count <= 0)
             {
-                App.Dispatch(() => 
+                App.Dispatch(() =>
                 {
                     Searches.Clear();
                     Searches.Add(new SearchViewModel()
@@ -245,25 +245,26 @@ namespace App.ViewModels
                         LineOne = "No search results"
                     });
                 });
-                return;
+            }
+            else
+            {
+                App.Dispatch(() =>
+                {
+                    Searches.Clear();
+                    foreach (MapLocation loc in e.Result)
+                    {
+                        Searches.Add(new SearchViewModel()
+                        {
+                            LineOne = String.IsNullOrWhiteSpace(loc.Information.Address.Street) ? loc.Information.Address.City : loc.Information.Address.Street +
+                                (String.IsNullOrWhiteSpace(loc.Information.Address.HouseNumber) ? "" : " " + loc.Information.Address.HouseNumber),
+                            LineTwo = loc.Information.Address.City,
+                            Location = loc
+                        });
+                    }
+                });
             }
 
-            App.Dispatch(() => 
-            {
-                Searches.Clear();
-                foreach (MapLocation loc in e.Result)
-                {
-                    Searches.Add(new SearchViewModel()
-                    {
-                        LineOne = String.IsNullOrWhiteSpace(loc.Information.Address.Street) ? loc.Information.Address.City : loc.Information.Address.Street + 
-                            (String.IsNullOrWhiteSpace(loc.Information.Address.HouseNumber) ? "" : " " + loc.Information.Address.HouseNumber),
-                        LineTwo = loc.Information.Address.City,
-                        Location = loc
-                    });
-                }
-
-                Loading = false;
-            });
+            App.Dispatch(() => Progress = false );
         }
 
         void GeoLoc_StatusChanged(Geolocator sender, StatusChangedEventArgs args)
