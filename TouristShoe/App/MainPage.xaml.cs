@@ -30,6 +30,8 @@ namespace App
         private bool _signTapped = false;
         private bool _mapSymbolTapped = false;
         private PlacesViewModel _navItem = null;
+
+        private readonly Point ORIGIN = new Point(0.4, 0.4);
         
         // Constructor
         public MainPage()
@@ -87,7 +89,7 @@ namespace App
             {
                 Content = locCircle,
                 GeoCoordinate = App.ViewModel.MyLocation,
-                PositionOrigin = new Point(0, 0)
+                PositionOrigin = ORIGIN
             };
 
             _myCurrentLocationLayer.Clear();
@@ -119,7 +121,7 @@ namespace App
             {
                 Content = locCircle,
                 GeoCoordinate = coord,
-                PositionOrigin = new Point(0, 0)
+                PositionOrigin = ORIGIN
             };
 
             _placesLayer.Add(overlay);
@@ -131,14 +133,14 @@ namespace App
         private void AddPlaceToMap(GeoCoordinate coord)
         {
             // Create my location marker
-            var locImage = new Image { Width = 40, Height = 40 };
+            var locImage = new Image { Width = 30, Height = 35 };
             locImage.Source = new BitmapImage(new Uri(@"/Resources/map_symbol_green.png", UriKind.Relative));
 
             var overlay = new MapOverlay
             {
                 Content = locImage,
                 GeoCoordinate = coord,
-                PositionOrigin = new Point(0, 0)
+                PositionOrigin = ORIGIN
             };
 
             _placesLayer.Add(overlay);
