@@ -160,12 +160,14 @@ namespace App
                 RouteOptimization = RouteOptimization.MinimizeDistance,
                 Waypoints = locations
             };
+            App.ViewModel.Progress = true;
             routeQuery.QueryCompleted += routeQuery_QueryCompleted;
             routeQuery.QueryAsync();
         }
 
         void routeQuery_QueryCompleted(object sender, QueryCompletedEventArgs<Route> e)
         {
+            App.ViewModel.Progress = false;
             if (e.Error != null) return;
 
             // Remove old route

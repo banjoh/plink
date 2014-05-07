@@ -34,9 +34,9 @@
         <ProgressBar
             Grid.Row="0"
             Name="Progress"
-            Visibility="{Binding Loading, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Visibility="{Binding Progress, Converter={StaticResource BooleanToVisibilityConverter}}"
             IsIndeterminate="True"
-            Margin="0,-30,0,0"
+            Margin="0,-40,0,0"
             Style="{StaticResource CustomIndeterminateProgressBar}"/>
 
         <!-- Shoe shoe image and GO button -->

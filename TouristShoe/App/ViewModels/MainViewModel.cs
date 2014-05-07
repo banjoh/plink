@@ -142,14 +142,14 @@ namespace App.ViewModels
             private set;
         }
 
-        private bool _loading;
+        private bool _progress;
         public bool Progress
         {
-            get { return _loading; }
+            get { return _progress; }
             set
             {
-                _loading = value;
-                NotifyPropertyChanged("Loading");
+                _progress = value;
+                NotifyPropertyChanged("Progress");
             }
         }
 

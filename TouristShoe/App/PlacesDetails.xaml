@@ -31,6 +31,26 @@
                     <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="Helsinki Cathedral (Finnish: Helsingin tuomiokirkko, Suurkirkko; Swedish: Helsingfors domkyrka, Storkyrkan) is the Finnish Evangelical Lutheran cathedral of the Diocese of Helsinki, located in the neighbourhood of Kruununhaka in the centre of Helsinki, Finland. The church was originally built from 1830-1852 as a tribute to the Grand Duke of Finland, Tsar Nicholas I of Russia. It was also known as St Nicholas' Church until the independence of Finland in 1917."/>
                 </Grid>
             </phone:PivotItem>
+            <phone:PivotItem>
+                <Grid Margin="10,-50,10,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Image Grid.Row="0" Width="430" Height="350" Source="{Binding LargeImage}"/>
+                    <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="Helsinki Cathedral (Finnish: Helsingin tuomiokirkko, Suurkirkko; Swedish: Helsingfors domkyrka, Storkyrkan) is the Finnish Evangelical Lutheran cathedral of the Diocese of Helsinki, located in the neighbourhood of Kruununhaka in the centre of Helsinki, Finland. The church was originally built from 1830-1852 as a tribute to the Grand Duke of Finland, Tsar Nicholas I of Russia. It was also known as St Nicholas' Church until the independence of Finland in 1917."/>
+                </Grid>
+            </phone:PivotItem>
+            <phone:PivotItem>
+                <Grid Margin="10,-50,10,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Image Grid.Row="0" Width="430" Height="350" Source="{Binding LargeImage}"/>
+                    <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="Helsinki Cathedral (Finnish: Helsingin tuomiokirkko, Suurkirkko; Swedish: Helsingfors domkyrka, Storkyrkan) is the Finnish Evangelical Lutheran cathedral of the Diocese of Helsinki, located in the neighbourhood of Kruununhaka in the centre of Helsinki, Finland. The church was originally built from 1830-1852 as a tribute to the Grand Duke of Finland, Tsar Nicholas I of Russia. It was also known as St Nicholas' Church until the independence of Finland in 1917."/>
+                </Grid>
+            </phone:PivotItem>
         </phone:Pivot>
     </Grid>
     

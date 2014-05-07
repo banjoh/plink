@@ -37,7 +37,10 @@ namespace App
             BluetoothOff
         }
 
+        // TODO: Give correct names
         const int BUFFER_SIZE = 10;
+        const string LEFT_SHOE = "RN42-E0D4";
+        const string RIGHT_SHOE = "RNBT-1DF8";
 
         // Route geometry needed to generate directional commands sent to the
         // shoes.
@@ -89,12 +92,10 @@ namespace App
             if (!await EnsureBluethoothConnected()) return;
 
             Debug.WriteLine("Connecting to shoe for real");
-            const string left = "RN42-E0D4";
-            const string right = "";
 
             StreamSocket[] results = await Task.WhenAll(
-                Task.Run(() => ConnectToShoe(left)),
-                Task.Run(() => ConnectToShoe(right))
+                Task.Run(() => ConnectToShoe(LEFT_SHOE)),
+                Task.Run(() => ConnectToShoe(RIGHT_SHOE))
             );
 
             _leftStreamSocket = results[0];
