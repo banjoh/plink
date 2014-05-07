@@ -39,8 +39,8 @@ namespace App
 
         // TODO: Give correct names
         const int BUFFER_SIZE = 10;
-        const string LEFT_SHOE = "RN42-E0D4";
-        const string RIGHT_SHOE = "RNBT-1DF8";
+        const string LEFT_SHOE = "LEFT";
+        const string RIGHT_SHOE = "RIGHT";
 
         // Route geometry needed to generate directional commands sent to the
         // shoes.
@@ -312,7 +312,7 @@ namespace App
                 foreach (PeerInformation p in pairedDevices)
                 {
                     App.Log(p.DisplayName);
-                    if (p.DisplayName != shoe) continue;
+                    if (!p.DisplayName.StartsWith(shoe)) continue;
                     selectedDevice = p;
                     break;
                 }
@@ -323,7 +323,7 @@ namespace App
                         var result =
                             MessageBox.Show(
                                 "Each shoe needs to be paired atleast once before using this application :)",
-                                "Pair " + shoe, MessageBoxButton.OKCancel);
+                                "Pair " + shoe + " shoe", MessageBoxButton.OKCancel);
                         if (result != MessageBoxResult.OK) return;
                         var connectionSettingsTask = new ConnectionSettingsTask
                         {

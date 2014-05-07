@@ -169,17 +169,21 @@ namespace App.ViewModels
                 Debug.WriteLine("Getting position");
                 Geoposition myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
                 Debug.WriteLine("Done getting pos");
-                MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
+                //MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
-                App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
-                App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
+                //App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
+                //App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
             }
             catch
             {
                 // Couldn't get current location - location might be disabled in settings
                 MessageBox.Show("Current location cannot be obtained. Check that location service is turned on in phone settings then restart the application.");
             }
+
+            var query1 = new GeocodeQuery { SearchTerm = "Keilalahdentie 2, 02150", MaxResultCount = 1, GeoCoordinate = MyLocation };
+            query1.QueryCompleted += custom_Query_Complete;
+            query1.QueryAsync();
 
             // Simulate loading stored locations
             var places = new List<string>
@@ -197,12 +201,12 @@ namespace App.ViewModels
 
             _placesNotGeoCoded = places.Count;
             
-            foreach (var p in places)
+            /*foreach (var p in places)
             {
                 var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
                 query.QueryCompleted += places_Query_QueryCompleted;
                 query.QueryAsync();
-            }
+            }*/
 
             // Wait for the connection task
             Debug.WriteLine("Waiting for shoe");
@@ -231,6 +235,45 @@ namespace App.ViewModels
             searchQuery.QueryAsync();
 
             return true;
+        }
+
+        void custom_Query_Complete(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
+        {
+            if (e.Result.Count > 0)
+            {
+                App.Dispatch(() =>
+                {
+                    MyLocation = e.Result[0].GeoCoordinate;
+
+                    var places = new List<string>
+                    {
+                        "Otaniementie 9, 02150",
+                        "Betongblandargränden 5, 02150",
+                        "Otakaari 1, 02150",
+                        "Keilaranta 17, 02150",
+                        "Teknikvägen 1, 02150"
+
+                        /*"Kyhhkysmäki 2, 02650",
+                        "Lintuvaarantie 30, 02650",
+                        "Sepelkyyhkyntie 2, 02650"*/
+                    };
+
+                    _placesNotGeoCoded = places.Count;
+
+                    foreach (var p in places)
+                    {
+                        var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
+                        query.QueryCompleted += places_Query_QueryCompleted;
+                        query.QueryAsync();
+                    }
+                });
+            }
+            else {
+                App.Dispatch(() =>
+                {
+                    Log = "FAILED";
+                });
+            }
         }
 
         void searchQuery_QueryCompleted(object sender, QueryCompletedEventArgs<IList<MapLocation>> e)
