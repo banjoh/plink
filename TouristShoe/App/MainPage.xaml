@@ -75,7 +75,7 @@
             <!--Pivot item one-->
             <phone:PivotItem Header="Places">
                 <!--Double line list with text wrapping-->
-                <phone:LongListSelector x:Name="PlacesLLS" Margin="0,-20,0,0" ItemsSource="{Binding Places}" SelectionChanged="LongListSelector_OnSelectionChanged">
+                <phone:LongListSelector x:Name="PlacesLLS" Margin="0,-20,0,0" ItemsSource="{Binding Places}" SelectionChanged="PlacesLLS_OnSelectionChanged">
                     <phone:LongListSelector.ItemTemplate>
                         <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
                             <Grid Background="{StaticResource ListBackground}" Margin="0,0,0,17">
@@ -108,8 +108,9 @@
             <!--Pivot item two-->
             <phone:PivotItem Header="Map" x:Name="Map">
                 <maps:Map x:Name="MapControl"
-                      LandmarksEnabled="True"
-                      PedestrianFeaturesEnabled="True" Margin="0,-20,0,0"/>
+                          LandmarksEnabled="True"
+                          PedestrianFeaturesEnabled="True"
+                          Margin="0,-20,0,0"/>
             </phone:PivotItem>
             
             <phone:PivotItem Header="Search">
@@ -121,10 +122,10 @@
                     
                     <TextBox x:Name="SearchBox" Grid.Row="0" Margin="0,-30,0,0" InputScope="Search" KeyUp="SearchBox_KeyUp"/>
                     <!--Double line list with text wrapping-->
-                    <phone:LongListSelector x:Name="SearchLLS" Grid.Row="1" ItemsSource="{Binding Searches}">
+                    <phone:LongListSelector x:Name="SearchLLS" Grid.Row="1" ItemsSource="{Binding Searches}" SelectionChanged="SearchLLS_SelectionChanged">
                         <phone:LongListSelector.ItemTemplate>
                             <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
-                                <StackPanel Tap="StackPanel_Tap">
+                                <StackPanel>
                                     <TextBlock Text="{Binding LineOne}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextLargeStyle}"/>
                                     <TextBlock Text="{Binding LineTwo}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextSmallStyle}"/>
                                 </StackPanel>

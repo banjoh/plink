@@ -268,7 +268,8 @@ namespace App.ViewModels
                     }
                 });
             }
-            else {
+            else 
+            {
                 App.Dispatch(() =>
                 {
                     Log = "FAILED";
@@ -341,7 +342,7 @@ namespace App.ViewModels
                 LineOne = loc.Information.Address.Street,
                 LineTwo = loc.Information.Address.City,
                 Location = loc,
-                VisitStatusProperty = PlacesViewModel.VisitStatus.No,
+                VisitStatusProperty = PlacesViewModel.VisitStatus.Visit,
                 ThumbNail = @"Assets\white_church_thumb.jpg",
                 LargeImage = @"Assets\white_church.jpg"
             }));

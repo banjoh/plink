@@ -8,8 +8,8 @@ namespace App.ViewModels
     {
         public enum VisitStatus
         {
-            Yes,
-            No
+            Visit,
+            DontVisit
         }
 
         private string _lineOne;
