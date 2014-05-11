@@ -185,7 +185,7 @@ namespace App
             App.ViewModel.Progress = false;
         }
 
-        private void Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)
+        private void Direction_Button_Tap(object sender, System.Windows.Input.GestureEventArgs e)
         {
             Button b = sender as Button;
             if (b == null) return;

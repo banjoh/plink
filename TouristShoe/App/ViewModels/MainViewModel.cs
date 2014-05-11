@@ -200,7 +200,8 @@ namespace App.ViewModels
             };
 
             _placesNotGeoCoded = places.Count;
-            
+            Places.Clear(); // Empty places list first
+
             /*foreach (var p in places)
             {
                 var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
@@ -260,6 +261,7 @@ namespace App.ViewModels
 
                     _placesNotGeoCoded = places.Count;
 
+                    Places.Clear(); // Empty places list first
                     foreach (var p in places)
                     {
                         var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
@@ -272,7 +274,7 @@ namespace App.ViewModels
             {
                 App.Dispatch(() =>
                 {
-                    Log = "FAILED";
+                    Log = "FAILED: " + e.Error.Message;
                 });
             }
         }

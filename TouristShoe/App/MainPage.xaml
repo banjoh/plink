@@ -138,10 +138,10 @@
             <!--Pivot item two-->
             <phone:PivotItem Header="Testing">
                 <Canvas>
-                    <Button Height="80" Width="250" Canvas.Top="50" Canvas.Left="100" Tap="Button_Tap">Continue Straight</Button>
-                    <Button Height="80" Width="200" Canvas.Top="200" Tap="Button_Tap">Go Left</Button>
-                    <Button Height="80" Width="200" Canvas.Top="200" Canvas.Left="250" Tap="Button_Tap">Go Right</Button>
-                    <Button Height="80" Width="200" Canvas.Top="350" Canvas.Left="125" Tap="Button_Tap">Turn Back</Button>
+                    <Button Height="80" Width="250" Canvas.Top="50" Canvas.Left="100" Tap="Direction_Button_Tap">Continue Straight</Button>
+                    <Button Height="80" Width="200" Canvas.Top="200" Tap="Direction_Button_Tap">Go Left</Button>
+                    <Button Height="80" Width="200" Canvas.Top="200" Canvas.Left="250" Tap="Direction_Button_Tap">Go Right</Button>
+                    <Button Height="80" Width="200" Canvas.Top="350" Canvas.Left="125" Tap="Direction_Button_Tap">Turn Back</Button>
                 </Canvas>
             </phone:PivotItem>
         </phone:Pivot>

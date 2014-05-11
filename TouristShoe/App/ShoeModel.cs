@@ -15,7 +15,6 @@ using System.Text.RegularExpressions;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
-using Windows.Devices.Geolocation; //Provides the Geocoordinate class.
 using Microsoft.Phone.Maps.Services;
 
 // Bluetooth
@@ -38,9 +37,15 @@ namespace App
         }
 
         // TODO: Give correct names
-        const int BUFFER_SIZE = 10;
+        const int BUFFER_SIZE = 3;
         const string LEFT_SHOE = "LEFT";
         const string RIGHT_SHOE = "RIGHT";
+
+        // Commads
+        const byte VIBRATE = 1;
+        const byte TESTCONN = 2;
+
+        private Timer connectionStatusTimer;
 
         // Route geometry needed to generate directional commands sent to the
         // shoes.
@@ -48,28 +53,24 @@ namespace App
         private readonly Queue<RouteManeuver> _maneuvers = new Queue<RouteManeuver>();
 
         // Socket used to communicate with the shoes through bluetooth
-		private StreamSocket _leftStreamSocket;
+        private StreamSocket _leftStreamSocket;
         private DataReader _leftReader;
         private DataWriter _leftWriter;
-        
+
         private StreamSocket _rightStreamSocket;
         private DataReader _rightReader;
         private DataWriter _rightWriter;
         
         public ShoeModel()
         {
-            App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        }
-
-        public void DeInit()
-        { 
-            
         }
 
         void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "MyRoute" && sender == App.ViewModel)
+            if (sender != App.ViewModel) return;
+
+            if (e.PropertyName == "MyRoute")
             {
                 // Store a local instance of the the RouteGeometry passed from the UI
                 //_routeGeometry = App.ViewModel.MyRoute.Geometry;
@@ -83,6 +84,11 @@ namespace App
                 }
 
                 Debug.WriteLine("ShoeModel: Route updated");
+            }
+
+            if (e.PropertyName == "MyLocation")
+            {
+                CalculateNavigationInstruction(App.ViewModel.MyLocation);
             }
         }
 
@@ -121,6 +127,31 @@ namespace App
                 App.Log("Right shoe connected!!!");
             }
             App.ViewModel.ShoeConnectionStatus = s;
+
+            // Constantly check whether bluetooth is connected
+            if (connectionStatusTimer == null)
+            {
+                connectionStatusTimer = new Timer(new TimerCallback(CallBack), this, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            }
+        }
+
+        private static void CallBack(object obj)
+        {
+            ShoeModel sm = obj as ShoeModel;
+            if (sm == null) return;
+
+            Task<bool> t = ShoeModel.SendMessage(sm._leftWriter, TESTCONN);
+            t.Wait();
+
+            Status s = t.Result ? Status.LeftConnected : Status.Disconnected;
+
+            t = ShoeModel.SendMessage(sm._rightWriter, TESTCONN);
+            t.Wait();
+
+            if (t.Result)
+                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
+
+            App.Dispatch(() => App.ViewModel.ShoeConnectionStatus = s);
         }
 
         private bool ShoeConnected(DataReader r)
@@ -154,7 +185,7 @@ namespace App
                 App.Log("BEFORE: " + received);
 
                 string s = "";
-                // TODO: This logic needs unit tests BAAADLY!!!
+                // TODO: This logic needs unit testing BAAADLY!!!
                 for(int i = 0; i < received.Length; i++)
                 {
                     char c = received[i];
@@ -165,38 +196,9 @@ namespace App
                     if (c == ']')
                     {
                         string afterRemove = received.Remove(0, i + 1);
-                        // Compass direction change
-                        if (Regex.IsMatch(s, @"^(.[0-9]*)\.(.[0-9]*)$"))
-                        {
-                            // TODO: Event for compass change
-                            string[] arr = s.Split('#');
 
-                            try
-                            {
-                                int x = Int32.Parse(arr[0]);
-                                int y = Int32.Parse(arr[1]);
-                                Tuple<int, int> tuple = new Tuple<int, int>(x, y);
-                                App.Log("COMPASS " + tuple);
-
-                                //TODO; Tell client of compass change
-                            }
-                            catch (Exception ex)
-                            {
-                                App.Log("PARSE EX: " + ex.Message);
-                            }
-                        }
-                        // Left vibrated
-                        else if (Regex.IsMatch(s, "^L$"))
-                        {
-                            // TODO: Event for vibrated
-                            App.Log("VIBRATED " + s);
-                        }
-                        // Right vibrated
-                        else if (Regex.IsMatch(s, "^R$"))
-                        {
-                            // TODO: Event for vibrated
-                            App.Log("VIBRATED " + s);
-                        }
+                        App.Log("CONSUME: " + s);
+                        Consume(s);
 
                         App.Log("R = " + afterRemove + ", S = " + s);
                         if (!Regex.IsMatch(afterRemove, @"^\[(.*)\](.*)"))
@@ -214,6 +216,47 @@ namespace App
                     }
                     s += c;
                 }
+            }
+        }
+
+        private static void Consume(string s)
+        {
+            // Compass direction change
+            if (Regex.IsMatch(s, @"^(.[0-9]*)\.(.[0-9]*)$"))
+            {
+                // TODO: Event for compass change
+                string[] arr = s.Split('#');
+
+                try
+                {
+                    int x = Int32.Parse(arr[0]);
+                    int y = Int32.Parse(arr[1]);
+                    Tuple<int, int> tuple = new Tuple<int, int>(x, y);
+                    App.Log("COMPASS " + tuple);
+
+                    //TODO; Tell client of compass change
+                }
+                catch (Exception ex)
+                {
+                    App.Log("PARSE EX: " + ex.Message);
+                }
+            }
+            // Left vibrated
+            else if (Regex.IsMatch(s, "^L$"))
+            {
+                // TODO: Event for vibrated
+                App.Log("VIBRATED " + s);
+            }
+            // Right vibrated
+            else if (Regex.IsMatch(s, "^R$"))
+            {
+                // TODO: Event for vibrated
+                App.Log("VIBRATED " + s);
+            }
+            // Acknowledgement
+            else if (Regex.IsMatch(s, "^ACK$"))
+            {
+                App.Log("ACKNOWLEDGEMENT");
             }
         }
 
@@ -354,18 +397,6 @@ namespace App
             return s;
         }
 		
-        void GeoLoc_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
-        {
-            if (App.GeoLoc != sender) return;
-            var coord = args.Position.Coordinate.ToGeoCoordinate();
-            // Implement logic that finds out if we are on course, or should turn
-
-            // We are in the UI
-            Debug.WriteLine("GeoLoc changed ShoeModel: {0}", coord);
-
-            CalculateNavigationInstruction(coord);
-        }
-
         private void CalculateNavigationInstruction(GeoCoordinate coord)
         {
             if (_maneuvers.Count <= 0)
@@ -380,8 +411,8 @@ namespace App
             double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
             if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
             {
-                InstructShoes(man);
-                if (dist < 5)   // Remove this maneuver, lets get the nex one
+                InstructShoes(man.InstructionKind);
+                if (dist < 5)   // Remove this maneuver, lets get the next one
                 {
                     _maneuvers.Dequeue();
                 }
@@ -394,45 +425,38 @@ namespace App
             App.Log(s);
         }
 
-        private void InstructShoes(RouteManeuver maneuver)
-        {
-            ShowToast("Now turn " + maneuver.InstructionKind);
-
-            InstructShoes(maneuver.InstructionKind);
-        }
-
         public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
         {
-            ShowToast("Now turn " + maneuverKind);
+            ShowToast("Now " + maneuverKind);
 
             List<Task> tasks = new List<Task>();
             switch (maneuverKind)
             { 
                 case RouteManeuverInstructionKind.TurnLeft:
-                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, 1)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, VIBRATE)));
                     break;
                 case RouteManeuverInstructionKind.TurnRight:
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, VIBRATE)));
                     break;
                 case RouteManeuverInstructionKind.GoStraight:
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
-                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, 1)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, VIBRATE)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, VIBRATE)));
                     break;
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
-                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, 1)));
+                    tasks.Add(Task.Run(() => SendMessage(_rightWriter, VIBRATE)));
                     break;
                 default:
                     return;
             }
 
             await Task.WhenAll(tasks.ToArray());
-            App.Log("Send direction instructon");
+            App.Log("Send direction instruction");
         }
 
-        private static async void SendMessage(DataWriter d, byte msg)
+        private static async Task<bool> SendMessage(DataWriter d, byte msg)
         {
-            if (d == null) return;
+            if (d == null) return false;
 
             // Create the data writer object backed by the in-memory stream.
             try
@@ -441,11 +465,13 @@ namespace App
                 await d.StoreAsync();
                 await d.FlushAsync();
 
+                return true;
                 // TODO: Wait for ACK message from shoe
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
+                return false;
             }
         }
 
