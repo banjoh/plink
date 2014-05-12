@@ -10,7 +10,12 @@ LSM303::vector<int16_t> temp_min = {0, 0, 0}, temp_max = {0, 0, 0};
 int counter = 0;
 
 char report[80];
+<<<<<<< HEAD
+//int vib = 25;  //Teensy 2++
+int vib = 15;  //Teensy 2.0
+=======
 int vib = 15;
+>>>>>>> 46f401d6f0e6d03c7dad53891cbcb0ab4218fc52
 char coords[10];
 boolean callibrated = false;
 float current_direction = 0;

@@ -98,6 +98,12 @@ namespace App
             if (!await EnsureBluethoothConnected()) return;
 
             Debug.WriteLine("Connecting to shoe for real");
+<<<<<<< HEAD
+            const string right = "RIGHT";
+            const string left = "LEFT";
+            
+=======
+>>>>>>> 46f401d6f0e6d03c7dad53891cbcb0ab4218fc52
 
             StreamSocket[] results = await Task.WhenAll(
                 Task.Run(() => ConnectToShoe(LEFT_SHOE)),
