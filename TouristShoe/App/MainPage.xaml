@@ -34,9 +34,9 @@
         <ProgressBar
             Grid.Row="0"
             Name="Progress"
-            Visibility="{Binding Loading, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Visibility="{Binding Progress, Converter={StaticResource BooleanToVisibilityConverter}}"
             IsIndeterminate="True"
-            Margin="0,-30,0,0"
+            Margin="0,-40,0,0"
             Style="{StaticResource CustomIndeterminateProgressBar}"/>
 
         <!-- Shoe shoe image and GO button -->
@@ -75,7 +75,7 @@
             <!--Pivot item one-->
             <phone:PivotItem Header="Places">
                 <!--Double line list with text wrapping-->
-                <phone:LongListSelector x:Name="PlacesLLS" Margin="0,-20,0,0" ItemsSource="{Binding Places}" SelectionChanged="LongListSelector_OnSelectionChanged">
+                <phone:LongListSelector x:Name="PlacesLLS" Margin="0,-20,0,0" ItemsSource="{Binding Places}" SelectionChanged="PlacesLLS_OnSelectionChanged">
                     <phone:LongListSelector.ItemTemplate>
                         <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
                             <Grid Background="{StaticResource ListBackground}" Margin="0,0,0,17">
@@ -108,8 +108,9 @@
             <!--Pivot item two-->
             <phone:PivotItem Header="Map" x:Name="Map">
                 <maps:Map x:Name="MapControl"
-                      LandmarksEnabled="True"
-                      PedestrianFeaturesEnabled="True" Margin="0,-20,0,0"/>
+                          LandmarksEnabled="True"
+                          PedestrianFeaturesEnabled="True"
+                          Margin="0,-20,0,0"/>
             </phone:PivotItem>
             
             <phone:PivotItem Header="Search">
@@ -121,10 +122,10 @@
                     
                     <TextBox x:Name="SearchBox" Grid.Row="0" Margin="0,-30,0,0" InputScope="Search" KeyUp="SearchBox_KeyUp"/>
                     <!--Double line list with text wrapping-->
-                    <phone:LongListSelector x:Name="SearchLLS" Grid.Row="1" ItemsSource="{Binding Searches}">
+                    <phone:LongListSelector x:Name="SearchLLS" Grid.Row="1" ItemsSource="{Binding Searches}" SelectionChanged="SearchLLS_SelectionChanged">
                         <phone:LongListSelector.ItemTemplate>
                             <DataTemplate toolkit:TiltEffect.SuppressTilt="True">
-                                <StackPanel Tap="StackPanel_Tap">
+                                <StackPanel>
                                     <TextBlock Text="{Binding LineOne}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextLargeStyle}"/>
                                     <TextBlock Text="{Binding LineTwo}" TextTrimming="WordEllipsis" Style="{StaticResource PhoneTextSmallStyle}"/>
                                 </StackPanel>
@@ -137,10 +138,10 @@
             <!--Pivot item two-->
             <phone:PivotItem Header="Testing">
                 <Canvas>
-                    <Button Height="80" Width="250" Canvas.Top="50" Canvas.Left="100" Tap="Button_Tap">Continue Straight</Button>
-                    <Button Height="80" Width="200" Canvas.Top="200" Tap="Button_Tap">Go Left</Button>
-                    <Button Height="80" Width="200" Canvas.Top="200" Canvas.Left="250" Tap="Button_Tap">Go Right</Button>
-                    <Button Height="80" Width="200" Canvas.Top="350" Canvas.Left="125" Tap="Button_Tap">Turn Back</Button>
+                    <Button Height="80" Width="250" Canvas.Top="50" Canvas.Left="100" Tap="Direction_Button_Tap">Continue Straight</Button>
+                    <Button Height="80" Width="200" Canvas.Top="200" Tap="Direction_Button_Tap">Go Left</Button>
+                    <Button Height="80" Width="200" Canvas.Top="200" Canvas.Left="250" Tap="Direction_Button_Tap">Go Right</Button>
+                    <Button Height="80" Width="200" Canvas.Top="350" Canvas.Left="125" Tap="Direction_Button_Tap">Turn Back</Button>
                 </Canvas>
             </phone:PivotItem>
         </phone:Pivot>

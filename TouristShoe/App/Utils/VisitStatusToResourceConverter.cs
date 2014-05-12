@@ -23,9 +23,9 @@ namespace App.Utils
 
             switch (s)
             {
-                case PlacesViewModel.VisitStatus.Yes:
+                case PlacesViewModel.VisitStatus.Visit:
                     return "Resources\\minus_green.png";
-                case PlacesViewModel.VisitStatus.No:
+                case PlacesViewModel.VisitStatus.DontVisit:
                     return "Resources\\plus_green.png";
                 default:
                     return DependencyProperty.UnsetValue;

@@ -1,7 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
-using App.ViewModels;
 
 namespace App
 {
@@ -10,16 +9,6 @@ namespace App
         public PlacesDetails()
         {
             InitializeComponent();
-        }
-
-        public PlacesViewModel Item { get; set; }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            base.OnNavigatedTo(e);
-
-            // Set data context containing the list of images
-            if (Item != null) DataContext = Item;
         }
     }
 }

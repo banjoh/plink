@@ -96,6 +96,9 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SearchMap.xaml.cs">
+      <DependentUpon>SearchMap.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PlacesDetails.xaml.cs">
       <DependentUpon>PlacesDetails.xaml</DependentUpon>
     </Compile>
@@ -107,6 +110,7 @@
       <DependentUpon>AppResources.resx</DependentUpon>
     </Compile>
     <Compile Include="Utils\BooleanToVisibilityConverter.cs" />
+    <Compile Include="Utils\MapUtil.cs" />
     <Compile Include="Utils\ShoeStatusToResourceConverter.cs" />
     <Compile Include="Utils\VisitStatusToResourceConverter.cs" />
     <Compile Include="ViewModels\PlacesViewModel.cs" />
@@ -119,6 +123,10 @@
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
     <Page Include="MainPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SearchMap.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
