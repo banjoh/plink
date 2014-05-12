@@ -285,5 +285,10 @@ namespace App
             // A little hack to get the LLS to fire SelectionChange after clicking the same list item
             lls.SelectedItem = null;
         }
+
+        private void ApplicationBarMenuItem_Click_1(object sender, EventArgs e)
+        {
+            NavigationService.Navigate(new Uri("/Config.xaml", UriKind.Relative));
+        }
     }
 }

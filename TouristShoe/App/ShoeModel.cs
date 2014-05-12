@@ -25,7 +25,7 @@ using Microsoft.Phone.Tasks;
 
 namespace App
 {
-    public class ShoeModel
+    public class ShoeModel : INotifyPropertyChanged
     {
         public enum Status
         { 
@@ -62,6 +62,18 @@ namespace App
         public ShoeModel()
         {
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        }
+
+        int _dist = 10;
+        public int Distance
+        {
+            get { return _dist; }
+            set 
+            {
+                if (value == _dist) return;
+                _dist = value;
+                NotifyPropertyChanged("Distance");
+            }
         }
 
         void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -417,10 +429,10 @@ namespace App
             // http://stackoverflow.com/questions/8564428/check-if-user-is-near-route-checkpoint-with-gps
             RouteManeuver man = _maneuvers.First();
             double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
-            if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
+            if (dist < Distance)  // When distance b2n is below 10 meters instruct shoe
             {
                 InstructShoes(man.InstructionKind);
-                if (dist < 5)   // Remove this maneuver, lets get the next one
+                if (dist < Distance / 2)   // Remove this maneuver, lets get the next one
                 {
                     _maneuvers.Dequeue();
                 }
@@ -497,6 +509,16 @@ namespace App
                 toast.Show();
             }
             App.Log(s);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged(String propertyName)
+        {
+            var handler = PropertyChanged;
+            if (null != handler)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
     }
 }
