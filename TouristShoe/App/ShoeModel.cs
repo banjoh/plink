@@ -45,8 +45,6 @@ namespace App
         const byte VIBRATE = 1;
         const byte TESTCONN = 2;
 
-        private Timer connectionStatusTimer;
-
         // Route geometry needed to generate directional commands sent to the
         // shoes.
         private Route _route;
@@ -94,6 +92,9 @@ namespace App
 
         public async Task ConnectToShoes()
         {
+            ResetLeft();
+            ResetRight();
+
             // Ensure bluetooth is connected
             if (!await EnsureBluethoothConnected()) return;
 
@@ -106,14 +107,11 @@ namespace App
 
             _leftStreamSocket = results[0];
             _rightStreamSocket = results[1];
-
-            Status s = Status.Disconnected;
-
+            
             if (_leftStreamSocket != null)
             {
                 _leftWriter = new DataWriter(_leftStreamSocket.OutputStream);
                 _leftReader = new DataReader(_leftStreamSocket.InputStream);
-                s = Status.LeftConnected;
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_leftReader, this));
                 App.Log("Left shoe connected!!!");
             }
@@ -122,34 +120,44 @@ namespace App
             {
                 _rightWriter = new DataWriter(_rightStreamSocket.OutputStream);
                 _rightReader = new DataReader(_rightStreamSocket.InputStream);
-                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_rightReader, this));
                 App.Log("Right shoe connected!!!");
             }
-            App.ViewModel.ShoeConnectionStatus = s;
 
-            // Constantly check whether bluetooth is connected
-            if (connectionStatusTimer == null)
-            {
-                connectionStatusTimer = new Timer(new TimerCallback(CallBack), this, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            }
+            UpdateShoeStatus();
         }
 
-        private static void CallBack(object obj)
+        private void ResetRight()
         {
-            ShoeModel sm = obj as ShoeModel;
-            if (sm == null) return;
+            _rightStreamSocket = null;
+            _rightReader = null;
+            _rightWriter = null;
 
-            Task<bool> t = ShoeModel.SendMessage(sm._leftWriter, TESTCONN);
-            t.Wait();
+            UpdateShoeStatus();
+        }
 
-            Status s = t.Result ? Status.LeftConnected : Status.Disconnected;
+        private void ResetLeft()
+        {
+            _leftStreamSocket = null;
+            _leftReader = null;
+            _leftWriter = null;
 
-            t = ShoeModel.SendMessage(sm._rightWriter, TESTCONN);
-            t.Wait();
+            UpdateShoeStatus();
+        }
 
-            if (t.Result)
-                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
+        private void UpdateShoeStatus()
+        {
+            Status s = Status.Disconnected;
+
+            if (_rightWriter != null)
+            {
+                s = Status.RightConnected;
+            }
+
+            if (_leftWriter != null)
+            {
+                s = s == Status.RightConnected ? Status.Connected : Status.LeftConnected;
+            }
 
             App.Dispatch(() => App.ViewModel.ShoeConnectionStatus = s);
         }
@@ -425,6 +433,8 @@ namespace App
             App.Log(s);
         }
 
+        delegate void Instruct();
+
         public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
         {
             ShowToast("Now " + maneuverKind);
@@ -445,6 +455,7 @@ namespace App
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
                     tasks.Add(Task.Run(() => SendMessage(_rightWriter, VIBRATE)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, VIBRATE)));
                     break;
                 default:
                     return;
@@ -454,7 +465,7 @@ namespace App
             App.Log("Send direction instruction");
         }
 
-        private static async Task<bool> SendMessage(DataWriter d, byte msg)
+        private async Task<bool> SendMessage(DataWriter d, byte msg)
         {
             if (d == null) return false;
 
@@ -470,6 +481,9 @@ namespace App
             }
             catch (Exception ex)
             {
+                if (d == _leftWriter) ResetLeft();
+                if (d == _rightWriter) ResetRight();
+
                 Debug.WriteLine(ex.Message);
                 return false;
             }

@@ -154,10 +154,6 @@ void loop() {
       case 1:
         Serial.println("vibrate");
         vibrate();
-        HW.write("123");
-        HW.print("456");
-        HW.println("789");
-        HW.flush();
         break;
       case 2:
         //update_config();
