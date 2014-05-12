@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Maps.Controls;
 using Microsoft.Phone.Maps.Services;
@@ -284,6 +285,14 @@ namespace App
 
             // A little hack to get the LLS to fire SelectionChange after clicking the same list item
             lls.SelectedItem = null;
+        }
+
+        private void Distance(object sender, GestureEventArgs e)
+        {
+              var s = new ShoeModel();
+              s.DIST = Convert.ToInt32(DistanceBox.Text);
+
+            throw new NotImplementedException();
         }
     }
 }

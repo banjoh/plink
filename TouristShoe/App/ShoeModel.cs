@@ -45,6 +45,7 @@ namespace App
         const byte VIBRATE = 1;
         const byte TESTCONN = 2;
 
+        public int DIST = 5;
         private Timer connectionStatusTimer;
 
         // Route geometry needed to generate directional commands sent to the
@@ -409,10 +410,10 @@ namespace App
             // http://stackoverflow.com/questions/8564428/check-if-user-is-near-route-checkpoint-with-gps
             RouteManeuver man = _maneuvers.First();
             double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
-            if (dist < 10)  // When distance b2n is below 10 meters instruct shoe
+            if (dist < DIST)  // When distance b2n is below 10 meters instruct shoe
             {
                 InstructShoes(man.InstructionKind);
-                if (dist < 5)   // Remove this maneuver, lets get the next one
+                if (dist < (int)DIST/2)   // Remove this maneuver, lets get the next one
                 {
                     _maneuvers.Dequeue();
                 }

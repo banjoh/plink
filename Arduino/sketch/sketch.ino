@@ -25,7 +25,7 @@ struct Config {
 Config conf;
 
 void setup() {
-  conf.vibration_duration = 1;
+  conf.vibration_duration = 2;
   conf.direction_delta = 10;
   conf.vibration_intensity = 4;
   
@@ -106,8 +106,6 @@ void vibrate()
   analogWrite(vib, conf.vibration_intensity * 51);
   delay(conf.vibration_duration * 1000);
   analogWrite(vib, 0);
-  
-  send_ack();
 }
 
 void test_vibrate_loop()
@@ -122,7 +120,6 @@ void test_vibrate_loop()
 
 void send_ack()
 {
-  Serial.println("[ACK]");
   HW.print("[ACK]");
   HW.flush();
 }
@@ -154,10 +151,6 @@ void loop() {
       case 1:
         Serial.println("vibrate");
         vibrate();
-        HW.write("123");
-        HW.print("456");
-        HW.println("789");
-        HW.flush();
         break;
       case 2:
         //update_config();
