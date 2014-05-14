@@ -25,7 +25,7 @@ using Microsoft.Phone.Tasks;
 
 namespace App
 {
-    public class ShoeModel
+    public class ShoeModel : INotifyPropertyChanged
     {
         public enum Status
         { 
@@ -45,9 +45,6 @@ namespace App
         const byte VIBRATE = 1;
         const byte TESTCONN = 2;
 
-        public int DIST = 5;
-        private Timer connectionStatusTimer;
-
         // Route geometry needed to generate directional commands sent to the
         // shoes.
         private Route _route;
@@ -65,6 +62,18 @@ namespace App
         public ShoeModel()
         {
             App.ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        }
+
+        int _dist = 10;
+        public int Distance
+        {
+            get { return _dist; }
+            set 
+            {
+                if (value == _dist) return;
+                _dist = value;
+                NotifyPropertyChanged("Distance");
+            }
         }
 
         void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -95,6 +104,9 @@ namespace App
 
         public async Task ConnectToShoes()
         {
+            ResetLeft();
+            ResetRight();
+
             // Ensure bluetooth is connected
             if (!await EnsureBluethoothConnected()) return;
 
@@ -107,14 +119,11 @@ namespace App
 
             _leftStreamSocket = results[0];
             _rightStreamSocket = results[1];
-
-            Status s = Status.Disconnected;
-
+            
             if (_leftStreamSocket != null)
             {
                 _leftWriter = new DataWriter(_leftStreamSocket.OutputStream);
                 _leftReader = new DataReader(_leftStreamSocket.InputStream);
-                s = Status.LeftConnected;
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_leftReader, this));
                 App.Log("Left shoe connected!!!");
             }
@@ -123,34 +132,44 @@ namespace App
             {
                 _rightWriter = new DataWriter(_rightStreamSocket.OutputStream);
                 _rightReader = new DataReader(_rightStreamSocket.InputStream);
-                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_rightReader, this));
                 App.Log("Right shoe connected!!!");
             }
-            App.ViewModel.ShoeConnectionStatus = s;
 
-            // Constantly check whether bluetooth is connected
-            if (connectionStatusTimer == null)
-            {
-                connectionStatusTimer = new Timer(new TimerCallback(CallBack), this, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            }
+            UpdateShoeStatus();
         }
 
-        private static void CallBack(object obj)
+        private void ResetRight()
         {
-            ShoeModel sm = obj as ShoeModel;
-            if (sm == null) return;
+            _rightStreamSocket = null;
+            _rightReader = null;
+            _rightWriter = null;
 
-            Task<bool> t = ShoeModel.SendMessage(sm._leftWriter, TESTCONN);
-            t.Wait();
+            UpdateShoeStatus();
+        }
 
-            Status s = t.Result ? Status.LeftConnected : Status.Disconnected;
+        private void ResetLeft()
+        {
+            _leftStreamSocket = null;
+            _leftReader = null;
+            _leftWriter = null;
 
-            t = ShoeModel.SendMessage(sm._rightWriter, TESTCONN);
-            t.Wait();
+            UpdateShoeStatus();
+        }
 
-            if (t.Result)
-                s = s == Status.LeftConnected ? Status.Connected : Status.RightConnected;
+        private void UpdateShoeStatus()
+        {
+            Status s = Status.Disconnected;
+
+            if (_rightWriter != null)
+            {
+                s = Status.RightConnected;
+            }
+
+            if (_leftWriter != null)
+            {
+                s = s == Status.RightConnected ? Status.Connected : Status.LeftConnected;
+            }
 
             App.Dispatch(() => App.ViewModel.ShoeConnectionStatus = s);
         }
@@ -410,10 +429,10 @@ namespace App
             // http://stackoverflow.com/questions/8564428/check-if-user-is-near-route-checkpoint-with-gps
             RouteManeuver man = _maneuvers.First();
             double dist = coord.GetDistanceTo(man.StartGeoCoordinate);
-            if (dist < DIST)  // When distance b2n is below 10 meters instruct shoe
+            if (dist < Distance)  // When distance b2n is below 10 meters instruct shoe
             {
                 InstructShoes(man.InstructionKind);
-                if (dist < (int)DIST/2)   // Remove this maneuver, lets get the next one
+                if (dist < Distance / 2)   // Remove this maneuver, lets get the next one
                 {
                     _maneuvers.Dequeue();
                 }
@@ -425,6 +444,8 @@ namespace App
             var s = "Dist: " + dist + ", direction = " + man.InstructionKind; 
             App.Log(s);
         }
+
+        delegate void Instruct();
 
         public async void InstructShoes(RouteManeuverInstructionKind maneuverKind)
         {
@@ -446,6 +467,7 @@ namespace App
                 case RouteManeuverInstructionKind.UTurnLeft:
                 case RouteManeuverInstructionKind.UTurnRight:
                     tasks.Add(Task.Run(() => SendMessage(_rightWriter, VIBRATE)));
+                    tasks.Add(Task.Run(() => SendMessage(_leftWriter, VIBRATE)));
                     break;
                 default:
                     return;
@@ -455,7 +477,7 @@ namespace App
             App.Log("Send direction instruction");
         }
 
-        private static async Task<bool> SendMessage(DataWriter d, byte msg)
+        private async Task<bool> SendMessage(DataWriter d, byte msg)
         {
             if (d == null) return false;
 
@@ -471,6 +493,9 @@ namespace App
             }
             catch (Exception ex)
             {
+                if (d == _leftWriter) ResetLeft();
+                if (d == _rightWriter) ResetRight();
+
                 Debug.WriteLine(ex.Message);
                 return false;
             }
@@ -484,6 +509,16 @@ namespace App
                 toast.Show();
             }
             App.Log(s);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged(String propertyName)
+        {
+            var handler = PropertyChanged;
+            if (null != handler)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
     }
 }

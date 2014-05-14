@@ -144,27 +144,7 @@
                     <Button Height="80" Width="200" Canvas.Top="350" Canvas.Left="125" Tap="Direction_Button_Tap">Turn Back</Button>
                 </Canvas>
             </phone:PivotItem>
-
-            <phone:PivotItem Header="Config">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    
-                    <TextBox x:Name="DistanceBox" Grid.Row="0" Margin="0,-30,0,0"/>
-                   <Canvas>
-                        <Button Height="80" Width="250" Canvas.Top="50" Canvas.Left="100" Tap="Distance">Apply distance</Button>
-                   </Canvas>
-
-                </Grid>
-               
-            </phone:PivotItem>
-
-
         </phone:Pivot>
-        
-        
 
         <Grid x:Name="DebugBox"
               Grid.Row="2"
@@ -204,6 +184,7 @@
         <shell:ApplicationBar IsVisible="True" IsMenuEnabled="True" Opacity="0.7" Mode="Minimized">
             <shell:ApplicationBar.MenuItems>
                 <shell:ApplicationBarMenuItem Text="Logs" Click="ApplicationBarMenuItem_Click"/>
+                <shell:ApplicationBarMenuItem Text="Config" Click="ApplicationBarMenuItem_Click_1"/>
             </shell:ApplicationBar.MenuItems>
         </shell:ApplicationBar>
     </phone:PhoneApplicationPage.ApplicationBar>

@@ -77,6 +77,7 @@ namespace App.ViewModels
             }
             set
             {
+                if (value == _shoeLogo) return;
                 _shoeLogo = value;
                 NotifyPropertyChanged("ShoeConnectionStatus");
             }
@@ -169,11 +170,11 @@ namespace App.ViewModels
                 Debug.WriteLine("Getting position");
                 Geoposition myGeoposition = await App.GeoLoc.GetGeopositionAsync(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10));
                 Debug.WriteLine("Done getting pos");
-                //MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
+                MyLocation = myGeoposition.Coordinate.ToGeoCoordinate();
 
                 // Listen to changing positions and status values
-                //App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
-                //App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
+                App.GeoLoc.PositionChanged += GeoLoc_PositionChanged;
+                App.GeoLoc.StatusChanged += GeoLoc_StatusChanged;
             }
             catch
             {
@@ -181,9 +182,9 @@ namespace App.ViewModels
                 MessageBox.Show("Current location cannot be obtained. Check that location service is turned on in phone settings then restart the application.");
             }
 
-            var query1 = new GeocodeQuery { SearchTerm = "Keilalahdentie 2, 02150", MaxResultCount = 1, GeoCoordinate = MyLocation };
+            /*var query1 = new GeocodeQuery { SearchTerm = "Keilalahdentie 2, 02150", MaxResultCount = 1, GeoCoordinate = MyLocation };
             query1.QueryCompleted += custom_Query_Complete;
-            query1.QueryAsync();
+            query1.QueryAsync();*/
 
             // Simulate loading stored locations
             var places = new List<string>
@@ -202,12 +203,12 @@ namespace App.ViewModels
             _placesNotGeoCoded = places.Count;
             Places.Clear(); // Empty places list first
 
-            /*foreach (var p in places)
+            foreach (var p in places)
             {
                 var query = new GeocodeQuery { SearchTerm = p, MaxResultCount = 1, GeoCoordinate = MyLocation };
                 query.QueryCompleted += places_Query_QueryCompleted;
                 query.QueryAsync();
-            }*/
+            }
 
             // Wait for the connection task
             Debug.WriteLine("Waiting for shoe");
