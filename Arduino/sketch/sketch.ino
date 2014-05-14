@@ -138,7 +138,8 @@ void update_config()
 
 void loop() {
   //test_vibrate_loop();
-  
+  Serial.println("hello");
+  delay(5000);
   // Read from bluetooth
   if (HW.available() > 0) 
   {

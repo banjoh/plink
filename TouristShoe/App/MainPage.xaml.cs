@@ -289,8 +289,7 @@ namespace App
 
         private void Distance(object sender, GestureEventArgs e)
         {
-              var s = new ShoeModel();
-              s.DIST = Convert.ToInt32(DistanceBox.Text);
+              var s = new ShoeModel {DIST = Convert.ToInt32(DistanceBox.Text)};
 
             throw new NotImplementedException();
         }
