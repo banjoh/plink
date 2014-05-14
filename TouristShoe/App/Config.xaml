@@ -13,6 +13,16 @@
     mc:Ignorable="d"
     shell:SystemTray.IsVisible="True">
 
+    <!-- Customizations -->
+    <phone:PhoneApplicationPage.Resources>
+        <Style x:Key="CustomHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PrimaryColorBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource PhoneFontFamilySemiLight}"/>
+            <Setter Property="Margin" Value="{StaticResource PhoneHorizontalMargin}"/>
+            <Setter Property="FontSize" Value="{StaticResource PhoneFontSizeExtraExtraLarge}"/>
+        </Style>
+    </phone:PhoneApplicationPage.Resources>
+
     <!--LayoutRoot is the root grid where all page content is placed-->
     <Grid x:Name="LayoutRoot" Background="Transparent">
         <Grid.RowDefinitions>
@@ -21,13 +31,10 @@
         </Grid.RowDefinitions>
 
         <!--TitlePanel contains the name of the application and page title-->
-        <StackPanel Grid.Row="0" Margin="12,17,0,28">
-            <TextBlock Text="Buzz Way" Style="{StaticResource PhoneTextNormalStyle}"/>
-            <TextBlock Text="Configuration" Margin="9,-7,0,0" Style="{StaticResource PhoneTextTitle1Style}"/>
-        </StackPanel>
-
+        <TextBlock Grid.Row="0" Text="Configuration" Style="{StaticResource CustomHeader}"/>
+        
         <!--ContentPanel - place additional content here-->
-        <Grid x:Name="ContentPanel" Grid.Row="1" Margin="12,0,12,0">
+        <Grid x:Name="ContentPanel" Grid.Row="1" Margin="12,10,12,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -38,7 +45,10 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
-            <TextBlock Margin="0,20,0,0" Grid.Row="0" Grid.Column="0">Turning distance: </TextBlock>
+            <TextBlock Margin="0,10,0,0" 
+                       Grid.Row="0" 
+                       Grid.Column="0"
+                       Style="{StaticResource PhoneTextLargeStyle}">Turning distance: </TextBlock>
             <TextBox x:Name="Dist" 
                      Grid.Row="0" 
                      Grid.Column="1"
