@@ -288,13 +288,7 @@ namespace App
 
         private void ApplicationBarMenuItem_Click_1(object sender, EventArgs e)
         {
-<<<<<<< HEAD
-              var s = new ShoeModel {DIST = Convert.ToInt32(DistanceBox.Text)};
-
-            throw new NotImplementedException();
-=======
             NavigationService.Navigate(new Uri("/Config.xaml", UriKind.Relative));
->>>>>>> 103285b073515e4702c957123ba3e203aa518cf4
         }
     }
 }
