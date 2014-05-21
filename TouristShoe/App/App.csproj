@@ -115,6 +115,7 @@
     <Compile Include="Utils\BooleanToVisibilityConverter.cs" />
     <Compile Include="Utils\MapUtil.cs" />
     <Compile Include="Utils\ShoeStatusToResourceConverter.cs" />
+    <Compile Include="Utils\UnitTestDetector.cs" />
     <Compile Include="Utils\VisitStatusToResourceConverter.cs" />
     <Compile Include="ViewModels\PlacesViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />

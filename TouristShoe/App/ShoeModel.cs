@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 
 //Maps & Location namespaces
 using System.Device.Location; // Provides the GeoCoordinate class.
@@ -22,6 +23,10 @@ using Windows.Networking.Proximity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Microsoft.Phone.Tasks;
+
+using App.Utils;
+
+[assembly: InternalsVisibleTo("UnitTests")]
 
 namespace App
 {
@@ -125,7 +130,7 @@ namespace App
                 _leftWriter = new DataWriter(_leftStreamSocket.OutputStream);
                 _leftReader = new DataReader(_leftStreamSocket.InputStream);
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_leftReader, this));
-                App.Log("Left shoe connected!!!");
+                Debug.WriteLine("Left shoe connected!!!");
             }
 
             if (_rightStreamSocket != null)
@@ -133,7 +138,7 @@ namespace App
                 _rightWriter = new DataWriter(_rightStreamSocket.OutputStream);
                 _rightReader = new DataReader(_rightStreamSocket.InputStream);
                 new Thread(ListenToShoe).Start(new Tuple<DataReader, ShoeModel>(_rightReader, this));
-                App.Log("Right shoe connected!!!");
+                Debug.WriteLine("Right shoe connected!!!");
             }
 
             UpdateShoeStatus();
@@ -197,46 +202,56 @@ namespace App
             if (m == null) return;
 
             DataReader reader = t.Item1 as DataReader;
-            App.Log("Listening shoe read");
+            Debug.WriteLine("Listening shoe read");
             string received = "";
             while (m.ShoeConnected(reader))
             {
                 received += ReadMessage(reader);
-                App.Log("BEFORE: " + received);
 
-                string s = "";
-                // TODO: This logic needs unit testing BAAADLY!!!
-                for(int i = 0; i < received.Length; i++)
+                received = ProcessMessage(received);
+            }
+        }
+
+
+
+        internal static string ProcessMessage(string received)
+        {            
+            Debug.WriteLine("BEFORE: " + received);
+
+            string s = "";
+            string remainder = received;
+            for(int i = 0; i < received.Length; i++)
+            {
+                char c = received[i];
+                if (c == '[')
                 {
-                    char c = received[i];
-                    if (c == '[')
+                    continue;
+                }
+                if (c == ']')
+                {
+                    string afterRemove = received.Remove(0, i + 1);
+
+                    Debug.WriteLine("CONSUME: " + s);
+                    Consume(s);
+
+                    Debug.WriteLine("R = " + afterRemove + ", S = " + s);
+                    if (!Regex.IsMatch(afterRemove, @"^\[(.*)\](.*)"))
                     {
+                        Debug.WriteLine("Lets break now");
+                        remainder = afterRemove;
+                        break;
+                    }
+                    else
+                    {
+                        s = "";
+                        Debug.WriteLine("Continue parsing");
                         continue;
                     }
-                    if (c == ']')
-                    {
-                        string afterRemove = received.Remove(0, i + 1);
-
-                        App.Log("CONSUME: " + s);
-                        Consume(s);
-
-                        App.Log("R = " + afterRemove + ", S = " + s);
-                        if (!Regex.IsMatch(afterRemove, @"^\[(.*)\](.*)"))
-                        {
-                            App.Log("Lets break now");
-                            received = afterRemove;
-                            break;
-                        }
-                        else
-                        {
-                            s = "";
-                            App.Log("Continue parsing");
-                            continue;
-                        }
-                    }
-                    s += c;
                 }
+                s += c;
             }
+
+            return remainder;
         }
 
         private static void Consume(string s)
@@ -252,31 +267,31 @@ namespace App
                     int x = Int32.Parse(arr[0]);
                     int y = Int32.Parse(arr[1]);
                     Tuple<int, int> tuple = new Tuple<int, int>(x, y);
-                    App.Log("COMPASS " + tuple);
+                    Debug.WriteLine("COMPASS " + tuple);
 
                     //TODO; Tell client of compass change
                 }
                 catch (Exception ex)
                 {
-                    App.Log("PARSE EX: " + ex.Message);
+                    Debug.WriteLine("PARSE EX: " + ex.Message);
                 }
             }
             // Left vibrated
             else if (Regex.IsMatch(s, "^L$"))
             {
                 // TODO: Event for vibrated
-                App.Log("VIBRATED " + s);
+                Debug.WriteLine("VIBRATED " + s);
             }
             // Right vibrated
             else if (Regex.IsMatch(s, "^R$"))
             {
                 // TODO: Event for vibrated
-                App.Log("VIBRATED " + s);
+                Debug.WriteLine("VIBRATED " + s);
             }
             // Acknowledgement
             else if (Regex.IsMatch(s, "^ACK$"))
             {
-                App.Log("ACKNOWLEDGEMENT");
+                Debug.WriteLine("ACKNOWLEDGEMENT");
             }
         }
 
@@ -302,11 +317,11 @@ namespace App
                     ret += reader.ReadString(1);
                 }
 
-                App.Log("READ: " + ret + ", Count: " + count);
+                Debug.WriteLine("READ: " + ret + ", Count: " + count);
             }
             catch (Exception ex)
             {
-                App.Log("READING EX: " + ex.Message);
+                Debug.WriteLine("READING EX: " + ex.Message);
             }
 
             return ret;
@@ -374,7 +389,7 @@ namespace App
 
                 foreach (PeerInformation p in pairedDevices)
                 {
-                    App.Log(p.DisplayName);
+                    Debug.WriteLine(p.DisplayName);
                     if (!p.DisplayName.StartsWith(shoe)) continue;
                     selectedDevice = p;
                     break;
@@ -394,7 +409,7 @@ namespace App
                         };
                         connectionSettingsTask.Show();
                     });
-                    App.Log("Shoe " + shoe + " NOT FOUND");
+                    Debug.WriteLine("Shoe " + shoe + " NOT FOUND");
                     return null;
                 }
 
@@ -411,7 +426,7 @@ namespace App
             catch (Exception ex)
             {
                 s = null;
-                App.Log(ex.Message);
+                Debug.WriteLine(ex.Message);
             }
 
             return s;
@@ -442,7 +457,7 @@ namespace App
 
             // Log
             var s = "Dist: " + dist + ", direction = " + man.InstructionKind; 
-            App.Log(s);
+            Debug.WriteLine(s);
         }
 
         delegate void Instruct();
@@ -474,7 +489,7 @@ namespace App
             }
 
             await Task.WhenAll(tasks.ToArray());
-            App.Log("Send direction instruction");
+            Debug.WriteLine("Send direction instruction");
         }
 
         private async Task<bool> SendMessage(DataWriter d, byte msg)
@@ -508,7 +523,7 @@ namespace App
                 var toast = new ShellToast { Content = s, Title = "Buzz Way" };
                 toast.Show();
             }
-            App.Log(s);
+            Debug.WriteLine(s);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
