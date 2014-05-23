@@ -216,29 +216,37 @@ namespace App
 
         internal static string ProcessMessage(string received)
         {            
-            Debug.WriteLine("BEFORE: " + received);
+            Debug.WriteLine("INPUT: " + received);
+
+            // Remove any empty brackets first
+            received = received.Replace("[]", "");
 
             string s = "";
             string remainder = received;
+            bool opened = false;
             for(int i = 0; i < received.Length; i++)
             {
                 char c = received[i];
+                // Open the brackets
                 if (c == '[')
                 {
+                    opened = true;
                     continue;
                 }
-                if (c == ']')
-                {
-                    string afterRemove = received.Remove(0, i + 1);
 
-                    Debug.WriteLine("CONSUME: " + s);
+                // Close the brackets
+                if (c == ']' && opened)
+                {
+                    opened = false;
+                    // Remove the string in question and the empty brackets
+                    remainder = remainder.Replace("[" + s + "]", "");
+
+                    Debug.WriteLine("Remainder = " + remainder + ", Consume = " + s);
                     Consume(s);
 
-                    Debug.WriteLine("R = " + afterRemove + ", S = " + s);
-                    if (!Regex.IsMatch(afterRemove, @"^\[(.*)\](.*)"))
+                    if (!Regex.IsMatch(remainder, @"^(.*)\[(.*)\](.*)"))
                     {
                         Debug.WriteLine("Lets break now");
-                        remainder = afterRemove;
                         break;
                     }
                     else
@@ -248,10 +256,20 @@ namespace App
                         continue;
                     }
                 }
-                s += c;
+
+                // Append char to value string
+                if (opened)
+                    s += c;
             }
 
-            return remainder;
+            // Remove all "hanging" strings. These are strings not within any brackets
+            if (remainder.Contains("]") || remainder.Contains("["))
+                return remainder;
+            else
+            {
+                Debug.WriteLine(remainder + " string will be lost as its a hanging string");
+                return "";
+            }
         }
 
         private static void Consume(string s)

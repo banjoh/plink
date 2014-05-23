@@ -32,7 +32,7 @@ namespace UnitTests
         public void Scenario_4()
         {
             string r = "333]";
-            Assert.AreEqual("[333", ShoeModel.ProcessMessage(r));
+            Assert.AreEqual("333]", ShoeModel.ProcessMessage(r));
         }
 
         [TestMethod]
@@ -82,6 +82,59 @@ namespace UnitTests
         {
             string r = "[]";
             Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_12()
+        {
+            string r = "[weewaasd][dfgs";
+            r = ShoeModel.ProcessMessage(r);
+            Assert.AreEqual("[dfgs", r);
+
+            r += "ree]";
+            Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_13()
+        {
+            string r = "rr][argasd]";
+            Assert.AreEqual("rr]", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_14()
+        {
+            string r = "[rr]345[argasd]";
+            Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_15()
+        {
+            string r = "234[rr]345[argasd]";
+            Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_16()
+        {
+            string r = "234[rr][argasd]999";
+            Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_17()
+        {
+            string r = "234[rr]asdf[argasd]999";
+            Assert.AreEqual("", ShoeModel.ProcessMessage(r));
+        }
+
+        [TestMethod]
+        public void Scenario_18()
+        {
+            string r = "rgasd]999";
+            Assert.AreEqual("rgasd]", ShoeModel.ProcessMessage(r));
         }
     }
 }
